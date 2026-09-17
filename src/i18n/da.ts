@@ -54,6 +54,7 @@ export const da = {
   startNotSet: 'Startpunkt ikke sat',
   pellets: 'Prikker',
   mapHint: 'Klik på kortet for at tilføje en prik. Træk en prik for at flytte den.',
+  newPelletPoints: 'Point for nye prikker',
   cancel: 'Afbryd',
   name: 'Navn',
   pointsLabel: 'Point',

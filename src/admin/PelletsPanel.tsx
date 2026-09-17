@@ -8,18 +8,35 @@ interface Props {
   pellets: readonly Pellet[];
   start: LatLng | null;
   selectedId: string | null;
+  /** Point value the next map click creates a pellet with. */
+  newPoints: number;
+  onNewPointsChange: (points: number) => void;
   onSelect: (id: string | null) => void;
   onSave: (pellet: Pellet) => Promise<void>;
   onDelete: (pellet: Pellet) => Promise<void>;
 }
 
-export default function PelletsPanel({ pellets, start, selectedId, onSelect, onSave, onDelete }: Props) {
+export default function PelletsPanel({ pellets, start, selectedId, newPoints, onNewPointsChange, onSelect, onSave, onDelete }: Props) {
   const sorted = [...pellets]
     .map(p => ({ pellet: p, distance: start ? haversineM(start, p) : null }))
     .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
 
   return (
-    <Panel title={<>{da.pellets} <span className="text-gray-400 font-normal">({pellets.length})</span></>}>
+    <Panel
+      title={<>{da.pellets} <span className="text-gray-400 font-normal">({pellets.length})</span></>}
+      action={
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          {da.newPelletPoints}
+          <input
+            type="number"
+            min={1}
+            value={newPoints}
+            onChange={e => onNewPointsChange(Math.max(1, Math.round(Number(e.target.value) || 1)))}
+            className={`${inputClass} w-16 font-semibold`}
+          />
+        </label>
+      }
+    >
       <p className="text-sm text-gray-500">{da.mapHint}</p>
       {pellets.length === 0 && <p className="text-gray-500 text-sm">{da.noPellets}</p>}
       {sorted.length > 0 && (

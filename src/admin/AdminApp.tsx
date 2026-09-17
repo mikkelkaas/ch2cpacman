@@ -26,6 +26,9 @@ export default function AdminApp() {
   const [writeError, setWriteError] = useState<string | null>(null);
   const [mode, setMode] = useState<MapMode>('idle');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Point value for the next dots. Set it once, click all the 1-point spots,
+  // change it, click all the 2-point spots, and so on. Not persisted.
+  const [newPoints, setNewPoints] = useState(1);
   const now = useNow(1000);
 
   const loadStatic = useCallback(async () => {
@@ -67,7 +70,7 @@ export default function AdminApp() {
       return;
     }
     void write(async () => {
-      const created = await api.pellets.create({ name: `Prik ${pellets.length + 1}`, lat: latlng.lat, lng: latlng.lng, radiusM: DEFAULT_RADIUS_M, points: 1 });
+      const created = await api.pellets.create({ name: `Prik ${pellets.length + 1}`, lat: latlng.lat, lng: latlng.lng, radiusM: DEFAULT_RADIUS_M, points: newPoints });
       setPellets(list => [...(list ?? []), created]);
       setSelectedId(created._id);
     });
@@ -191,7 +194,7 @@ export default function AdminApp() {
           <Scoreboard scores={scores} />
           <TeamsPanel teams={teams} phaseMinutes={settings.phaseMinutes} now={now} onAdd={addTeams} onReset={resetTeam} onDelete={deleteTeam} />
           <SettingsPanel settings={settings} mode={mode} onSave={saveSettings} onSetMode={setMode} />
-          <PelletsPanel pellets={pellets} start={settings.start} selectedId={selectedId} onSelect={setSelectedId} onSave={savePellet} onDelete={deletePellet} />
+          <PelletsPanel pellets={pellets} start={settings.start} selectedId={selectedId} newPoints={newPoints} onNewPointsChange={setNewPoints} onSelect={setSelectedId} onSave={savePellet} onDelete={deletePellet} />
         </div>
       </div>
     </div>,

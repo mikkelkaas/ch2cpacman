@@ -20,8 +20,9 @@ Design: `docs/superpowers/specs/2026-09-17-ch2cpacman-design.md`.
 1. Open the admin page on a laptop.
 2. **Indstillinger**: set minutes per team (default 10). Click *Sæt startpunkt*,
    then click the map where the teams start.
-3. **Prikker**: click the map to add a dot. Drag a dot to move it; drag the map to
-   pan. The list is sorted by distance from the start, so give the far ones more
+3. **Prikker**: set *Point for nye prikker*, then click the map once per dot of
+   that value; change the number and continue with the next value. Drag a dot to
+   move it; drag the map to pan. The list is sorted by distance from the start, so give the far ones more
    points. Radius is how close the phone has to be, in metres; the default is
    5 m, use more under dense trees.
 4. **Hold**: paste the team names, one per line, and *Tilføj*. The 4-character
