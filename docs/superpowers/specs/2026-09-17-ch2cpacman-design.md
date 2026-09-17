@@ -157,6 +157,8 @@ Writes go straight to cruttelut and update local state on success.
 - Failed admin writes show the same bar; the edit is not applied locally.
 - Runner Start failing to save shows "Kunne ikke starte, prøv igen" and does not
   start the countdown, since the timestamp must exist for scoring.
+- A runner opening the site before the admin has placed the start or any
+  pellet sees "Spillet er ikke sat op endnu" instead of the code screen.
 - Geolocation denied or unavailable shows a full-screen explanation of how to
   allow it, in Danish, and the Start button stays disabled until a fix arrives.
 
