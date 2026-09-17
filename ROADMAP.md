@@ -7,7 +7,8 @@ list is a menu. Effort is a rough size for one person who knows the code:
 Built so far, for reference: per-team timed runs, GPS pellets with points and
 radius, power pellets, Dobbelt, virtual ghosts, several games, five map
 themes, an admin with standings, an in-app guide, a GPS accuracy guard, QR
-join codes on a phone and a printable team sheet. See `README.md`.
+join codes on a phone, a printable team sheet and a team photo before the start
+(stored in cruttelut's file bucket). See `README.md`.
 
 ## Recommended next
 
@@ -56,8 +57,8 @@ leaders.
   screen and in admin. Capture positions exist; a trail needs a few uploads per
   minute.
 - **Hall of fame** (S). Best scores across games, since several games exist.
-- **Team photo** (M). Camera at START and GAME OVER; winners on the board.
-  Needs image storage, which cruttelut is not good at.
+- **Game-over photo** (S). The start photo exists; a second one at GAME OVER
+  with the score burned in would make a nice souvenir.
 
 ## Beyond one station
 

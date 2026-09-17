@@ -46,6 +46,8 @@ export interface Team extends GameScoped {
   createdAt: string;
   /** ISO timestamp written once when the team taps Start; null until then. */
   startedAt: string | null;
+  /** Key in the photo bucket of the team photo taken before the start. */
+  photoKey?: string | null;
 }
 
 export interface Pellet extends GameScoped {

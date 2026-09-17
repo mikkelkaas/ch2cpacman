@@ -92,7 +92,11 @@ export default function HelpButton() {
             <Section title="2. Når et hold kommer">
               <ol className="list-decimal pl-5 space-y-1">
                 <li>Åbn løbersiden på telefonen (link øverst) og tast holdets kode.</li>
-                <li>Holdet læser reglerne, trykker Videre, kigger på kortet og planlægger.</li>
+                <li>
+                  Holdet læser reglerne og trykker Videre. Så tager de et <b>holdfoto</b>, som kommer i stillingen her; de kan springe det
+                  over.
+                </li>
+                <li>De kigger på kortet og planlægger.</li>
                 <li>
                   Når de trykker <b>TRYK START</b>, starter deres ur. Stillingen her viser dem inden for 10 sekunder.
                 </li>

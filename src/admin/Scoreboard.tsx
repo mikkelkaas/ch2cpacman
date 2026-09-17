@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { da } from '../i18n/da';
+import { photoUrl } from '../lib/files';
 import type { TeamScore } from '../lib/score';
 import { Panel } from './ui';
 
@@ -42,8 +43,11 @@ function Row({ score, rank, open, onToggle }: { score: TeamScore; rank: number; 
       <tr onClick={onToggle} className="cursor-pointer hover:bg-gray-50">
         <td className="py-2 pr-2 text-gray-500">{rank + 1}.</td>
         <td className="py-2 pr-2">
-          <span className="inline-block w-3 h-3 rounded-full mr-2 align-middle border border-gray-300" style={{ background: score.team.color }} />
-          <span className="text-gray-900 font-medium">{score.team.name}</span>
+          <div className="flex items-center gap-2">
+            {score.team.photoKey && <img src={photoUrl(score.team.photoKey)} alt="" className="w-8 h-8 object-cover rounded border border-gray-300" />}
+            <span className="inline-block w-3 h-3 rounded-full border border-gray-300" style={{ background: score.team.color }} />
+            <span className="text-gray-900 font-medium">{score.team.name}</span>
+          </div>
         </td>
         <td className="py-2 pr-2 text-right font-semibold text-gray-900 tabular-nums">{score.points}</td>
         <td className="py-2 pr-2 text-right text-gray-700 tabular-nums">{score.pellets.length}</td>

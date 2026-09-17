@@ -15,12 +15,14 @@ import { isFrightened } from '../lib/ghosts';
 import { dedupeCaptures } from '../lib/score';
 import { GHOST_WARN_M, withDefaults } from '../lib/settings';
 import { sound } from '../lib/sound';
+import { photoUrl } from '../lib/files';
 import { storage } from '../lib/storage';
 import type { Capture, GameEvent, GameSettings, Pellet, Settings, Team } from '../lib/types';
 import Briefing from './Briefing';
 import CodeScreen from './CodeScreen';
 import GameOver from './GameOver';
 import Hud from './Hud';
+import PhotoScreen from './PhotoScreen';
 import RunnerMap from './RunnerMap';
 import { useCaptureEngine } from './useCaptureEngine';
 import { useGhosts } from './useGhosts';
@@ -67,11 +69,14 @@ export default function RunnerApp({ joinCode = null }: { joinCode?: string | nul
 
   const team = teams?.find(t => t._id === teamId) ?? null;
   const gameId = team?.gameId ?? null;
+  // Keyed on ids, not the team object: a team update (start, photo) must not
+  // reload the game and remount the screens.
+  const loadTeamId = team?._id ?? null;
 
   // Then the team's game: settings, pellets, and this team's captures and
   // events once, so a reload never resurrects eaten pellets or lost points.
   const loadGame = useCallback(async () => {
-    if (!team) return;
+    if (!loadTeamId) return;
     setDataError(null);
     try {
       const [settingsList, pelletList, captureList, eventList] = await Promise.all([
@@ -85,13 +90,13 @@ export default function RunnerApp({ joinCode = null }: { joinCode?: string | nul
       setData({
         settings: settings ?? { _id: '', phaseMinutes: 10, start: null },
         pellets: forGame(pelletList),
-        captures: captureList.filter(c => c.teamId === team._id),
-        events: eventList.filter(e => e.teamId === team._id),
+        captures: captureList.filter(c => c.teamId === loadTeamId),
+        events: eventList.filter(e => e.teamId === loadTeamId),
       });
     } catch (err) {
       setDataError(err instanceof Error ? err.message : String(err));
     }
-  }, [team, gameId]);
+  }, [loadTeamId, gameId]);
 
   useEffect(() => {
     setData(null);
@@ -181,6 +186,7 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
   const now = useNow(250);
   const state = phaseState(team, settings.phaseMinutes, now);
   const [briefed, setBriefed] = useState(state !== 'idle');
+  const [photoSkipped, setPhotoSkipped] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
@@ -243,6 +249,9 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
   if (state === 'idle' && !briefed) {
     return <Briefing teamName={team.name} settings={settings} pellets={pellets} onDone={() => setBriefed(true)} />;
   }
+  if (state === 'idle' && !team.photoKey && !photoSkipped) {
+    return <PhotoScreen team={team} onDone={onTeamChange} onSkip={() => setPhotoSkipped(true)} />;
+  }
 
   const eatenCount = pellets.filter(p => engine.eatenIds.has(p._id)).length;
 
@@ -262,7 +271,10 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
 
       {state === 'idle' && (
         <div className="absolute inset-x-0 bottom-0 z-[450] p-4 bg-gradient-to-t from-black via-black/90 to-transparent flex flex-col items-center gap-3">
-          <div className="font-arcade text-[10px] text-pellet">{team.name}</div>
+          <div className="flex items-center gap-3">
+            {team.photoKey && <img src={photoUrl(team.photoKey)} alt="" className="w-12 h-12 object-cover border-2 border-maze" />}
+            <div className="font-arcade text-[10px] text-pellet">{team.name}</div>
+          </div>
           <p className="text-gray-200 text-center">{fix ? da.readyQuestion : da.locationWaiting}</p>
           {startError && <p className="font-arcade text-ghost-red text-xs">{startError}</p>}
           <ArcadeButton onClick={start} disabled={starting || !fix} className="w-full max-w-sm text-lg py-5 glow-maze">
@@ -301,7 +313,7 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
         </div>
       )}
 
-      {state === 'over' && <GameOver points={points} pelletCount={eatenCount} teamName={team.name} />}
+      {state === 'over' && <GameOver points={points} pelletCount={eatenCount} teamName={team.name} photoUrl={team.photoKey ? photoUrl(team.photoKey) : null} />}
 
       {rulesOpen && <Briefing overlay teamName={team.name} settings={settings} pellets={pellets} onDone={() => setRulesOpen(false)} />}
     </div>

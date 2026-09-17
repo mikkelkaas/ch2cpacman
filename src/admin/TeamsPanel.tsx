@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { da, formatClock } from '../i18n/da';
+import { photoUrl } from '../lib/files';
 import { phaseEndMs, phaseState } from '../lib/phase';
 import type { Team } from '../lib/types';
 import QrDialog from './QrDialog';
@@ -90,10 +91,21 @@ export default function TeamsPanel({ teams, phaseMinutes, now, onAdd, onReset, o
                 <tr key={team._id}>
                   <td className="py-2 pr-2">
                     <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full shrink-0 border border-gray-300" style={{ background: team.color }} />
-                      <span className="text-gray-900">{team.name}</span>
+                      {team.photoKey ? (
+                        <a href={photoUrl(team.photoKey)} target="_blank" rel="noreferrer" title={da.photo}>
+                          <img src={photoUrl(team.photoKey)} alt="" className="w-10 h-10 object-cover rounded border border-gray-300" />
+                        </a>
+                      ) : (
+                        <span className="w-10 h-10 rounded border border-dashed border-gray-300 shrink-0" />
+                      )}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-3 h-3 rounded-full shrink-0 border border-gray-300" style={{ background: team.color }} />
+                          <span className="text-gray-900">{team.name}</span>
+                        </div>
+                        <div className="text-xs pl-5">{stateLabel(team)}</div>
+                      </div>
                     </div>
-                    <div className="text-xs pl-5">{stateLabel(team)}</div>
                   </td>
                   <td className="py-2 pr-2 font-mono text-lg tracking-widest text-gray-900">{team.code}</td>
                   <td className="py-2 text-right whitespace-nowrap">

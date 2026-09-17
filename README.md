@@ -37,7 +37,8 @@ built: `ROADMAP.md`.
    patrols; scanning it joins the team without typing. *Print* in the header
    opens a sheet with one card per team and a station overview of all codes.
 5. Hand a patrol a phone with the runner page open. They type the code, read the
-   rules, tap *Videre*, plan on the map, tap *TRYK START*. The countdown starts
+   rules, tap *Videre*, take a team photo (or skip it), plan on the map, tap
+   *TRYK START*. The countdown starts
    the moment they tap. The phone eats pellets automatically when inside a
    pellet's radius; nobody taps anything.
 6. **Stilling** on the admin page refreshes every 10 seconds. Click a row to
@@ -99,6 +100,11 @@ if needed) the first time it loads.
 | `ch2cpacman_captures` | append-only: `teamId`, `pelletId`, `capturedAt`, `lat`, `lng`, `clientId` |
 | `ch2cpacman_events` | append-only: `teamId`, `type` (`ghost_caught`, `ghost_eaten`), `at`, `points`, `clientId` |
 
+Team photos are files, not JSON: `PUT https://cruttelut.kaasfrich.dk/files/ch2cpacman_photos/<gameId>/<teamId>/start-<ts>.jpg`,
+shrunk to 1024 px JPEG in the browser first. The team record keeps the key in
+`photoKey`; the public GET address is the image URL. Deleting a team or a game
+deletes its photos. A test build uses the `ch2cpacman_test_photos` bucket.
+
 Scores are never stored; both pages compute them from captures. Duplicate
 captures of the same pellet by the same team are ignored, so retries are safe.
 
@@ -134,6 +140,7 @@ for players only.
 
 - [ ] Code screen rejects a wrong code, accepts the right one, remembers the team
 - [ ] Rules screen shows the configured minutes
+- [ ] Photo screen opens the camera; the photo shows in admin within 10 s; skip works
 - [ ] Map fits all pellets and the start
 - [ ] TRYK START writes `startedAt` (visible in admin within 10 s)
 - [ ] Walking into a pellet eats it: pop, chomp, score

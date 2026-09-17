@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { da } from '../i18n/da';
 import { api } from '../lib/api';
+import { deleteFile, PHOTO_BUCKET } from '../lib/files';
 import { FIRST_GAME_NAME, homeForOrphans, orphans } from '../lib/games';
 import type { Game, Pellet, Team } from '../lib/types';
 import HelpButton from './HelpDialog';
@@ -94,6 +95,7 @@ export default function GamesPage() {
       ]);
       const mine = <T extends { gameId?: string }>(list: T[]) => list.filter(r => r.gameId === game._id);
       await Promise.all([
+        ...mine(teamList).filter(t => t.photoKey).map(t => deleteFile(PHOTO_BUCKET, t.photoKey!).catch(() => undefined)),
         ...mine(captureList).map(r => api.captures.remove(r._id)),
         ...mine(eventList).map(r => api.events.remove(r._id)),
         ...mine(pelletList).map(r => api.pellets.remove(r._id)),

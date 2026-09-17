@@ -5,6 +5,7 @@ import { da, formatClock } from '../i18n/da';
 import { api } from '../lib/api';
 import { rankTeams } from '../lib/score';
 import { generateTeamCode } from '../lib/teamCode';
+import { deleteFile, PHOTO_BUCKET } from '../lib/files';
 import { inGame } from '../lib/games';
 import type { Capture, Game, GameEvent, LatLng, Pellet, PelletKind, Settings, Team } from '../lib/types';
 import AdminMap from './AdminMap';
@@ -146,6 +147,7 @@ export default function AdminApp({ gameId }: { gameId: string }) {
   const deleteTeam = (team: Team) =>
     write(async () => {
       await deleteTeamCaptures(team);
+      if (team.photoKey) await deleteFile(PHOTO_BUCKET, team.photoKey).catch(() => undefined);
       await api.teams.remove(team._id);
       setTeams(list => list.filter(t => t._id !== team._id));
     });
