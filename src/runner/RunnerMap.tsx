@@ -91,7 +91,7 @@ export default function RunnerMap({ pellets, eatenIds, start, fix, ghosts = [], 
     const pos: [number, number] = [fix.lat, fix.lng];
     if (!runnerMarker.current) {
       runnerMarker.current = L.marker(pos, { icon: pacmanIcon(headingRef.current), interactive: false, zIndexOffset: 1000 }).addTo(map);
-      accuracyRing.current = L.circle(pos, { radius: fix.accuracyM, color: '#ffe600', weight: 1, opacity: 0.5, fillOpacity: 0.08 }).addTo(map);
+      accuracyRing.current = L.circle(pos, { radius: fix.accuracyM, color: '#2121ff', weight: 1, opacity: 0.6, fillOpacity: 0.08 }).addTo(map);
     } else {
       runnerMarker.current.setLatLng(pos).setIcon(pacmanIcon(headingRef.current));
       accuracyRing.current?.setLatLng(pos).setRadius(fix.accuracyM);

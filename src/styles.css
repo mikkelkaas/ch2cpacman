@@ -30,14 +30,13 @@ body { font-family: var(--font-body); -webkit-tap-highlight-color: transparent; 
 
 /* Map markers */
 .pellet-dot {
-  border-radius: 9999px; background: #ffb8ae;
-  box-shadow: 0 0 6px #ffb8ae, 0 0 14px rgba(255, 184, 174, 0.7);
-  display: flex; align-items: center; justify-content: center;
+  border-radius: 9999px; background: #ffb8ae; border: 2px solid rgba(0, 0, 0, 0.75);
+  box-shadow: 0 0 6px #ffb8ae, 0 0 14px rgba(255, 184, 174, 0.9);
+  display: flex; align-items: center; justify-content: center; box-sizing: border-box;
 }
-.pellet-dot.kind-power { animation: power-pulse 1s ease-in-out infinite; background: #fff; box-shadow: 0 0 10px #fff, 0 0 22px rgba(255,255,255,0.7); }
+.pellet-dot.kind-power { animation: power-pulse 1s ease-in-out infinite; background: #ffe600; box-shadow: 0 0 10px #ffe600, 0 0 22px rgba(255,230,0,0.8); }
 .pellet-dot.kind-double { background: #00ffff; box-shadow: 0 0 8px #00ffff, 0 0 18px rgba(0,255,255,0.7); }
 .pellet-dot.kind-double .pellet-label { color: #00ffff; }
-.ghost { filter: drop-shadow(0 0 5px rgba(255,255,255,0.5)); }
 .ghost.flashing { animation: blink 0.25s steps(2, start) infinite; }
 .danger-vignette { pointer-events: none; position: absolute; inset: 0; z-index: 440; box-shadow: inset 0 0 80px 30px rgba(255, 0, 0, 0.6); animation: blink 0.6s steps(2, start) infinite; }
 .power-vignette { pointer-events: none; position: absolute; inset: 0; z-index: 440; box-shadow: inset 0 0 60px 20px rgba(33, 33, 255, 0.6); }
@@ -47,14 +46,17 @@ body { font-family: var(--font-body); -webkit-tap-highlight-color: transparent; 
 @keyframes eaten { to { transform: scale(0); opacity: 0; } }
 .pellet-label {
   position: absolute; left: 100%; top: 50%; transform: translate(4px, -50%);
-  font-family: var(--font-arcade); font-size: 10px; color: #ffe600; text-shadow: 0 0 4px #000, 0 0 4px #000; white-space: nowrap;
+  font-family: var(--font-arcade); font-size: 10px; color: #000; background: rgba(255, 230, 0, 0.9); padding: 1px 3px; white-space: nowrap;
 }
-.pacman { filter: drop-shadow(0 0 6px #ffe600); }
-.start-square { width: 14px; height: 14px; background: #2121ff; box-shadow: 0 0 8px #2121ff; }
+.pellet-dot.kind-double .pellet-label { color: #000; background: rgba(0, 255, 255, 0.9); }
+.pacman { filter: drop-shadow(0 0 4px rgba(0,0,0,0.6)); }
+.ghost { filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7)); }
+.start-square { width: 14px; height: 14px; background: #2121ff; border: 2px solid #fff; box-shadow: 0 0 8px #2121ff; box-sizing: border-box; }
 .leaflet-container { font-family: var(--font-body); }
-/* Runner map only. Invert OSM into a night map: light backgrounds go near-black, roads stay readable. */
-.arcade-map.leaflet-container { background: #000; }
-.dark-tiles { filter: invert(1) hue-rotate(180deg) brightness(0.65) contrast(1.15) saturate(0.6); }
+/* Runner map: an ordinary light OSM map, slightly dimmed. An inverted night map
+   looked the part but was unreadable in daylight on a phone. */
+.arcade-map.leaflet-container { background: #dfe6d9; }
+.dark-tiles { filter: brightness(0.9) saturate(1.05); }
 .arcade-map .leaflet-control-attribution { background: rgba(0,0,0,0.6) !important; color: #888 !important; font-size: 9px; }
 .arcade-map .leaflet-control-attribution a { color: #aaa !important; }
 .arcade-map .leaflet-bar a { background: #000 !important; color: #ffe600 !important; border-color: #2121ff !important; }

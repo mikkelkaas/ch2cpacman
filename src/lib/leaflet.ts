@@ -52,7 +52,7 @@ export function ghostIcon(color: string, mode: 'normal' | 'frightened' | 'flashi
     iconSize: [30, 30],
     iconAnchor: [15, 15],
     html: `<svg class="ghost ${mode}" viewBox="0 0 100 100" width="30" height="30">
-      <path d="M10 95 V50 A40 40 0 0 1 90 50 V95 L78 82 L66 95 L54 82 L42 95 L30 82 L18 95 Z" fill="${fill}"/>${eyes}</svg>`,
+      <path d="M10 95 V50 A40 40 0 0 1 90 50 V95 L78 82 L66 95 L54 82 L42 95 L30 82 L18 95 Z" fill="${fill}" stroke="#000" stroke-width="4"/>${eyes}</svg>`,
   });
 }
 
@@ -83,7 +83,7 @@ export function pacmanIcon(headingDeg: number): L.DivIcon {
     iconSize: [30, 30],
     iconAnchor: [15, 15],
     html: `<svg class="pacman" viewBox="0 0 100 100" width="30" height="30" style="transform:rotate(${rot}deg)">
-      <path d="M50 50 L95 22 A50 50 0 1 0 95 78 Z" fill="#ffe600"/>
+      <path d="M50 50 L95 22 A50 50 0 1 0 95 78 Z" fill="#ffe600" stroke="#000" stroke-width="5"/>
     </svg>`,
   });
 }
