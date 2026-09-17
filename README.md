@@ -14,7 +14,8 @@ Nothing to install: it is a static web page, hosted on GitHub Pages at
 - Admin, list of games: `https://mikkelkaas.github.io/ch2cpacman/#/admin`
 - Admin, one game: `https://mikkelkaas.github.io/ch2cpacman/#/admin/<gameId>`
 
-Design: `docs/superpowers/specs/2026-09-17-ch2cpacman-design.md`.
+Design: `docs/superpowers/specs/2026-09-17-ch2cpacman-design.md`. Ideas not yet
+built: `ROADMAP.md`.
 
 ## Running the event
 
