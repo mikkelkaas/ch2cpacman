@@ -70,7 +70,7 @@ function PelletRow({ pellet, distance, selected, onSelect, onSave, onDelete }: R
       ...draft,
       name: draft.name.trim() || pellet.name,
       points: Math.max(1, Math.round(Number(draft.points) || 1)),
-      radiusM: Math.max(5, Math.round(Number(draft.radiusM) || 15)),
+      radiusM: Math.max(1, Math.round(Number(draft.radiusM) || 5)),
     };
     setDraft(next);
     if (next.name !== pellet.name || next.points !== pellet.points || next.radiusM !== pellet.radiusM) void onSave(next);
@@ -86,7 +86,7 @@ function PelletRow({ pellet, distance, selected, onSelect, onSave, onDelete }: R
         <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} onBlur={commit} onKeyDown={blurOnEnter} className={`${inputClass} w-full min-w-24`} aria-label={da.name} />
       </td>
       <td className="py-1.5 pr-2" onClick={e => e.stopPropagation()}>
-        <input type="number" min={5} step={5} value={draft.radiusM} onChange={e => setDraft({ ...draft, radiusM: Number(e.target.value) })} onBlur={commit} onKeyDown={blurOnEnter} className={`${inputClass} w-16`} aria-label={da.radius} />
+        <input type="number" min={1} step={1} value={draft.radiusM} onChange={e => setDraft({ ...draft, radiusM: Number(e.target.value) })} onBlur={commit} onKeyDown={blurOnEnter} className={`${inputClass} w-16`} aria-label={da.radius} />
       </td>
       <td className="py-1.5 pr-2 text-right text-gray-500 whitespace-nowrap">{distance === null ? '–' : `${Math.round(distance)} m`}</td>
       <td className="py-1.5 text-right" onClick={e => e.stopPropagation()}>

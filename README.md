@@ -23,7 +23,7 @@ Design: `docs/superpowers/specs/2026-09-17-ch2cpacman-design.md`.
 3. **Prikker**: click the map to add a dot. Drag a dot to move it; drag the map to
    pan. The list is sorted by distance from the start, so give the far ones more
    points. Radius is how close the phone has to be, in metres; the default is
-   15 m, use more under dense trees.
+   5 m, use more under dense trees.
 4. **Hold**: paste the team names, one per line, and *Tilføj*. The 4-character
    code next to each team is what the patrol types on the phone. Codes never
    contain 0, O, 1 or I.

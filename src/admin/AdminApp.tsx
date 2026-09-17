@@ -16,7 +16,7 @@ import { Button } from './ui';
 
 const TEAM_COLORS = ['#dc2626', '#2563eb', '#16a34a', '#f59e0b', '#9333ea', '#0891b2', '#db2777', '#65a30d'];
 const POLL_MS = 10_000;
-export const DEFAULT_RADIUS_M = 15;
+export const DEFAULT_RADIUS_M = 5;
 
 export default function AdminApp() {
   const [settings, setSettings] = useState<Settings | null>(null);

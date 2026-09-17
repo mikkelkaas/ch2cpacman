@@ -89,7 +89,7 @@ reset sets it back to null.
   "radiusM": 25, "points": 3 }
 ```
 
-Points are whole numbers ≥ 1. Radius default 15 m. Deleting a pellet does not
+Points are whole numbers ≥ 1. Radius default 5 m. Deleting a pellet does not
 delete captures of it; scoring ignores captures whose pellet no longer exists.
 
 ### `ch2cpacman_captures` — append only
@@ -175,7 +175,7 @@ Danish.
 
 - **Indstillinger.** Phase length in minutes. "Sæt startpunkt" arms the map; the
   next click places the start marker. Saved on change.
-- **Pellets.** A click on the map adds one with a default name, radius 15 m and
+- **Pellets.** A click on the map adds one with a default name, radius 5 m and
   1 point, and selects it. Dragging a pellet moves it and saves the new position
   on drop; dragging the map pans. The list shows name, points, radius and
   distance from the start in metres, sorted by distance, so the admin can grade
