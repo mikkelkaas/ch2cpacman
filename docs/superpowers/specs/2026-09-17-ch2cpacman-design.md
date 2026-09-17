@@ -244,7 +244,22 @@ Score = Σ pellet × multiplier + Σ events, floored at 0. Admin: the settings
 above, a type per pellet and a type for new dots, and catches / ghosts eaten in
 the standings. The briefing adds a line per feature that is in play.
 
+## Several games (added 2026-09-17)
+
+The one-game assumption was dropped. `ch2cpacman_games` holds `{ name,
+createdAt }`; settings, teams, pellets, captures and events carry `gameId`.
+`#/admin` lists games with create and delete (delete removes every record of
+the game); `#/admin/<gameId>` is the per-game admin. Team codes are unique
+across all games, so the runner still only types a code: the team's `gameId`
+selects its settings and pellets. Records without `gameId` from before this
+change are adopted into the oldest game, created as "Spil 1" when none exists,
+the first time the games page loads.
+
+Settings also gained `mapTheme`: `nat` (default, inverted and brightened),
+`neon`, `lys` (plain), `amber`, `groen`. The runner map applies the matching
+CSS filter preset to the tiles only.
+
 ## Out of scope
 
-Routes, home base, voice, photos, questions, multiple games, authentication,
+Routes, home base, voice, photos, questions, authentication,
 pellet scarcity between teams, bonus fruit, human ghosts, anti-spoofing.

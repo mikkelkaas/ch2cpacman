@@ -5,7 +5,8 @@ import { da, formatClock } from '../i18n/da';
 import { api } from '../lib/api';
 import { rankTeams } from '../lib/score';
 import { generateTeamCode } from '../lib/teamCode';
-import type { Capture, GameEvent, LatLng, Pellet, PelletKind, Settings, Team } from '../lib/types';
+import { inGame } from '../lib/games';
+import type { Capture, Game, GameEvent, LatLng, Pellet, PelletKind, Settings, Team } from '../lib/types';
 import AdminMap from './AdminMap';
 import type { MapMode } from './AdminMap';
 import PelletsPanel from './PelletsPanel';
@@ -18,12 +19,15 @@ const TEAM_COLORS = ['#dc2626', '#2563eb', '#16a34a', '#f59e0b', '#9333ea', '#08
 const POLL_MS = 10_000;
 export const DEFAULT_RADIUS_M = 5;
 
-export default function AdminApp() {
+export default function AdminApp({ gameId }: { gameId: string }) {
+  const [game, setGame] = useState<Game | null | undefined>(undefined);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [pellets, setPellets] = useState<Pellet[] | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [events, setEvents] = useState<GameEvent[]>([]);
+  // Codes across every game: a runner's code must identify the game too.
+  const [allCodes, setAllCodes] = useState<string[]>([]);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [mode, setMode] = useState<MapMode>('idle');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -34,19 +38,23 @@ export default function AdminApp() {
   const now = useNow(1000);
 
   const loadStatic = useCallback(async () => {
-    const [settingsList, pelletList] = await Promise.all([api.settings.list(), api.pellets.list()]);
-    let current = settingsList[0];
-    if (!current) current = await api.settings.create({ phaseMinutes: 10, start: null });
+    const [gameList, settingsList, pelletList] = await Promise.all([api.games.list(), api.settings.list(), api.pellets.list()]);
+    const found = gameList.find(g => g._id === gameId) ?? null;
+    setGame(found);
+    if (!found) return;
+    let current = inGame(settingsList, gameId)[0];
+    if (!current) current = await api.settings.create({ gameId, phaseMinutes: 10, start: null });
     setSettings(current);
-    setPellets(pelletList);
-  }, []);
+    setPellets(inGame(pelletList, gameId));
+  }, [gameId]);
 
   const loadLive = useCallback(async () => {
     const [teamList, captureList, eventList] = await Promise.all([api.teams.list(), api.captures.list(), api.events.list()]);
-    setTeams(teamList);
-    setCaptures(captureList);
-    setEvents(eventList);
-  }, []);
+    setAllCodes(teamList.map(t => t.code));
+    setTeams(inGame(teamList, gameId));
+    setCaptures(inGame(captureList, gameId));
+    setEvents(inGame(eventList, gameId));
+  }, [gameId]);
 
   const staticPoll = usePolling(loadStatic, 60 * 60_000);
   const livePoll = usePolling(loadLive, POLL_MS);
@@ -73,7 +81,7 @@ export default function AdminApp() {
       return;
     }
     void write(async () => {
-      const created = await api.pellets.create({ name: `Prik ${pellets.length + 1}`, lat: latlng.lat, lng: latlng.lng, radiusM: DEFAULT_RADIUS_M, points: newPoints, kind: newKind });
+      const created = await api.pellets.create({ gameId, name: `Prik ${pellets.length + 1}`, lat: latlng.lat, lng: latlng.lng, radiusM: DEFAULT_RADIUS_M, points: newPoints, kind: newKind });
       setPellets(list => [...(list ?? []), created]);
       setSelectedId(created._id);
     });
@@ -99,13 +107,14 @@ export default function AdminApp() {
 
   const addTeams = (names: string[]) =>
     write(async () => {
-      const codes = new Set(teams.map(t => t.code));
+      const codes = new Set(allCodes);
       const created: Team[] = [];
       for (const [i, name] of names.entries()) {
         const code = generateTeamCode(codes);
         codes.add(code);
         created.push(
           await api.teams.create({
+            gameId,
             name,
             code,
             color: TEAM_COLORS[(teams.length + i) % TEAM_COLORS.length],
@@ -115,6 +124,7 @@ export default function AdminApp() {
         );
       }
       setTeams(list => [...list, ...created]);
+      setAllCodes(list => [...list, ...created.map(t => t.code)]);
     });
 
   const deleteTeamCaptures = async (team: Team) => {
@@ -146,7 +156,18 @@ export default function AdminApp() {
 
   const shell = (children: React.ReactNode) => <div className="min-h-full bg-gray-100 text-gray-900 font-body">{children}</div>;
 
-  if (!settings || !pellets) {
+  if (game === null) {
+    return shell(
+      <div className="p-8 text-center text-gray-600">
+        <p className="mb-3">{da.gameNotFound}</p>
+        <a href="#/admin" className="text-blue-700 underline">
+          {da.allGames}
+        </a>
+      </div>,
+    );
+  }
+
+  if (!settings || !pellets || !game) {
     return shell(
       <div className="p-8 text-center text-gray-600">
         {staticPoll.error ? (
@@ -166,8 +187,12 @@ export default function AdminApp() {
   return shell(
     <div className="min-h-full flex flex-col">
       <header className="flex items-center justify-between gap-4 px-4 py-3 bg-white border-b border-gray-200">
-        <h1 className="text-lg font-semibold">
-          Pac-Spejd <span className="text-gray-400 font-normal">{da.admin}</span>
+        <h1 className="text-lg font-semibold flex items-center gap-2 min-w-0">
+          <a href="#/admin" className="text-gray-400 font-normal hover:underline shrink-0">
+            {da.allGames}
+          </a>
+          <span className="text-gray-300">/</span>
+          <span className="truncate">{game.name}</span>
         </h1>
         <div className="flex items-center gap-4 text-sm text-gray-500">
           {livePoll.lastLoadedAt && <span>{da.refreshed(formatClock(livePoll.lastLoadedAt))}</span>}

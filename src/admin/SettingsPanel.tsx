@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { da } from '../i18n/da';
 import { withDefaults } from '../lib/settings';
-import type { GameSettings, Settings } from '../lib/types';
+import { MAP_THEMES } from '../lib/types';
+import type { GameSettings, MapTheme, Settings } from '../lib/types';
 import type { MapMode } from './AdminMap';
 import { Button, inputClass, Panel } from './ui';
 
@@ -24,7 +25,7 @@ export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Pro
 
   const arming = mode === 'setStart';
   const full = withDefaults(settings);
-  const numberField = (key: keyof Omit<GameSettings, '_id' | 'start' | 'phaseMinutes'>, label: string, min: number, step = 1) => (
+  const numberField = (key: keyof Omit<GameSettings, '_id' | 'gameId' | 'start' | 'phaseMinutes' | 'mapTheme'>, label: string, min: number, step = 1) => (
     <NumberField key={key} label={label} value={full[key]} min={min} step={step} onCommit={value => void onSave({ ...settings, [key]: value })} />
   );
 
@@ -53,6 +54,16 @@ export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Pro
         </Button>
       </div>
       {arming && <p className="text-amber-700 text-sm">{da.setStartHint}</p>}
+      <label className="flex items-center justify-between gap-3 text-sm text-gray-700">
+        {da.mapTheme}
+        <select value={full.mapTheme} onChange={e => void onSave({ ...settings, mapTheme: e.target.value as MapTheme })} className={inputClass}>
+          {MAP_THEMES.map(t => (
+            <option key={t} value={t}>
+              {da.mapThemes[t]}
+            </option>
+          ))}
+        </select>
+      </label>
       <h3 className="text-xs font-semibold text-gray-500 uppercase pt-2">{da.ghostSettings}</h3>
       {numberField('ghostCount', da.ghostCount, 0)}
       {numberField('ghostSpeedMps', da.ghostSpeed, 0.1, 0.1)}

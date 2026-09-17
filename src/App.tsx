@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import RunnerApp from './runner/RunnerApp';
 import AdminApp from './admin/AdminApp';
+import GamesPage from './admin/GamesPage';
 
-type Route = 'runner' | 'admin';
+type Route = { kind: 'runner' } | { kind: 'games' } | { kind: 'admin'; gameId: string };
 
 function routeFromHash(): Route {
-  return window.location.hash.startsWith('#/admin') ? 'admin' : 'runner';
+  const match = window.location.hash.match(/^#\/admin(?:\/([^/]+))?/);
+  if (!match) return { kind: 'runner' };
+  return match[1] ? { kind: 'admin', gameId: decodeURIComponent(match[1]) } : { kind: 'games' };
 }
 
 function useHashRoute(): Route {
@@ -20,5 +23,7 @@ function useHashRoute(): Route {
 
 export default function App() {
   const route = useHashRoute();
-  return route === 'admin' ? <AdminApp /> : <RunnerApp />;
+  if (route.kind === 'admin') return <AdminApp key={route.gameId} gameId={route.gameId} />;
+  if (route.kind === 'games') return <GamesPage />;
+  return <RunnerApp />;
 }

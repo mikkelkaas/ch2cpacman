@@ -53,10 +53,19 @@ body { font-family: var(--font-body); -webkit-tap-highlight-color: transparent; 
 .ghost { filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7)); }
 .start-square { width: 14px; height: 14px; background: #2121ff; border: 2px solid #fff; box-shadow: 0 0 8px #2121ff; box-sizing: border-box; }
 .leaflet-container { font-family: var(--font-body); }
-/* Runner map: an ordinary light OSM map, slightly dimmed. An inverted night map
-   looked the part but was unreadable in daylight on a phone. */
-.arcade-map.leaflet-container { background: #dfe6d9; }
-.dark-tiles { filter: brightness(0.9) saturate(1.05); }
+/* Runner map themes. The wrapper carries `theme-<name>`; the tiles carry `dark-tiles`.
+   Filters run on the tile images only, so markers keep their own colours. */
+.arcade-map.leaflet-container { background: #000; }
+.theme-nat .dark-tiles { filter: invert(1) hue-rotate(180deg) brightness(1.5) contrast(0.9) saturate(0.7); }
+.theme-nat .arcade-map.leaflet-container { background: #14161a; }
+.theme-neon .dark-tiles { filter: invert(1) hue-rotate(90deg) brightness(1.5) contrast(1.1) saturate(2); }
+.theme-neon .arcade-map.leaflet-container { background: #0a0a2a; }
+.theme-lys .dark-tiles { filter: brightness(0.9) saturate(1.05); }
+.theme-lys .arcade-map.leaflet-container { background: #dfe6d9; }
+.theme-amber .dark-tiles { filter: invert(1) grayscale(1) sepia(1) hue-rotate(-10deg) saturate(2.5) brightness(1.5) contrast(1.1); }
+.theme-amber .arcade-map.leaflet-container { background: #2a1a05; }
+.theme-groen .dark-tiles { filter: invert(1) grayscale(1) sepia(1) hue-rotate(60deg) saturate(4) brightness(1.4) contrast(1.1); }
+.theme-groen .arcade-map.leaflet-container { background: #061a08; }
 .arcade-map .leaflet-control-attribution { background: rgba(0,0,0,0.6) !important; color: #888 !important; font-size: 9px; }
 .arcade-map .leaflet-control-attribution a { color: #aaa !important; }
 .arcade-map .leaflet-bar a { background: #000 !important; color: #ffe600 !important; border-color: #2121ff !important; }

@@ -24,70 +24,77 @@ import RunnerMap from './RunnerMap';
 import { useCaptureEngine } from './useCaptureEngine';
 import { useGhosts } from './useGhosts';
 
-interface Loaded {
-  settings: Settings | null;
+interface GameData {
+  settings: Settings;
   pellets: Pellet[];
-  teams: Team[];
+  captures: Capture[];
+  events: GameEvent[];
 }
 
 export default function RunnerApp() {
-  const [data, setData] = useState<Loaded | null>(null);
+  const [teams, setTeams] = useState<Team[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [teamId, setTeamId] = useState(() => storage.getTeamId());
-  const [captures, setCaptures] = useState<Capture[] | null>(null);
-  const [events, setEvents] = useState<GameEvent[]>([]);
+  const [data, setData] = useState<GameData | null>(null);
+  const [dataError, setDataError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  // Teams first: the code on the phone identifies both the team and its game.
+  const loadTeams = useCallback(async () => {
     setLoadError(null);
     try {
-      const [settingsList, pellets, teams] = await Promise.all([api.settings.list(), api.pellets.list(), api.teams.list()]);
-      setData({ settings: settingsList[0] ?? null, pellets, teams });
+      setTeams(await api.teams.list());
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : String(err));
     }
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void loadTeams();
+  }, [loadTeams]);
 
-  // This team's captures, once, so a reload never resurrects eaten pellets.
-  useEffect(() => {
-    if (!teamId) {
-      setCaptures(null);
-      return;
-    }
-    let cancelled = false;
-    Promise.all([api.captures.list(), api.events.list().catch(() => [] as GameEvent[])])
-      .then(([allCaptures, allEvents]) => {
-        if (cancelled) return;
-        setCaptures(allCaptures.filter(c => c.teamId === teamId));
-        setEvents(allEvents.filter(e => e.teamId === teamId));
-      })
-      .catch(() => {
-        if (!cancelled) setCaptures([]);
+  const team = teams?.find(t => t._id === teamId) ?? null;
+  const gameId = team?.gameId ?? null;
+
+  // Then the team's game: settings, pellets, and this team's captures and
+  // events once, so a reload never resurrects eaten pellets or lost points.
+  const loadGame = useCallback(async () => {
+    if (!team) return;
+    setDataError(null);
+    try {
+      const [settingsList, pelletList, captureList, eventList] = await Promise.all([
+        api.settings.list(),
+        api.pellets.list(),
+        api.captures.list(),
+        api.events.list().catch(() => [] as GameEvent[]),
+      ]);
+      const forGame = <T extends { gameId?: string }>(list: T[]) => (gameId ? list.filter(r => r.gameId === gameId) : list.filter(r => !r.gameId));
+      const settings = forGame(settingsList)[0] ?? null;
+      setData({
+        settings: settings ?? { _id: '', phaseMinutes: 10, start: null },
+        pellets: forGame(pelletList),
+        captures: captureList.filter(c => c.teamId === team._id),
+        events: eventList.filter(e => e.teamId === team._id),
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [teamId]);
+    } catch (err) {
+      setDataError(err instanceof Error ? err.message : String(err));
+    }
+  }, [team, gameId]);
 
-  if (loadError && !data) {
+  useEffect(() => {
+    setData(null);
+    void loadGame();
+  }, [loadGame]);
+
+  if (loadError && !teams) {
     return (
       <div className="min-h-full flex flex-col">
-        <ErrorBar message={da.fetchFailed} onRetry={load} />
+        <ErrorBar message={da.fetchFailed} onRetry={loadTeams} />
         <FullScreenMessage title={da.title} />
       </div>
     );
   }
-  if (!data) return <FullScreenMessage title={da.loading} />;
+  if (!teams) return <FullScreenMessage title={da.loading} />;
 
-  const { settings, pellets, teams } = data;
-  if (!settings || !settings.start || pellets.length === 0) {
-    return <FullScreenMessage title={da.notSetUp}>{da.notSetUpHint}</FullScreenMessage>;
-  }
-
-  const team = teams.find(t => t._id === teamId) ?? null;
   if (!team) {
     return (
       <CodeScreen
@@ -99,7 +106,36 @@ export default function RunnerApp() {
       />
     );
   }
-  if (!captures) return <FullScreenMessage title={da.loading} />;
+
+  if (dataError && !data) {
+    return (
+      <div className="min-h-full flex flex-col">
+        <ErrorBar message={da.fetchFailed} onRetry={loadGame} />
+        <FullScreenMessage title={da.title} />
+      </div>
+    );
+  }
+  if (!data) return <FullScreenMessage title={da.loading} />;
+
+  const { settings, pellets, captures, events } = data;
+  if (!settings._id || !settings.start || pellets.length === 0) {
+    return (
+      <FullScreenMessage title={da.notSetUp}>
+        {da.notSetUpHint}
+        <div className="mt-4">
+          <button
+            className="underline text-gray-500 text-sm"
+            onClick={() => {
+              storage.setTeamId(null);
+              setTeamId(null);
+            }}
+          >
+            {da.changeTeam}
+          </button>
+        </div>
+      </FullScreenMessage>
+    );
+  }
 
   return (
     <Game
@@ -109,7 +145,7 @@ export default function RunnerApp() {
       pellets={pellets}
       captures={captures}
       events={events}
-      onTeamChange={updated => setData(d => (d ? { ...d, teams: d.teams.map(t => (t._id === updated._id ? updated : t)) } : d))}
+      onTeamChange={updated => setTeams(list => (list ? list.map(t => (t._id === updated._id ? updated : t)) : list))}
       onLeaveTeam={() => {
         storage.setTeamId(null);
         setTeamId(null);
@@ -200,6 +236,7 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
   return (
     <div className="relative h-full w-full overflow-hidden">
       <RunnerMap
+        theme={settings.mapTheme}
         pellets={pellets}
         eatenIds={engine.eatenIds}
         start={settings.start}

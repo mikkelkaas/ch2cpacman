@@ -11,15 +11,19 @@ Nothing to install: it is a static web page, hosted on GitHub Pages at
 [cruttelut](https://cruttelut.kaasfrich.dk), an unauthenticated JSON store.
 
 - Runner: `https://mikkelkaas.github.io/ch2cpacman/`
-- Admin: `https://mikkelkaas.github.io/ch2cpacman/#/admin`
+- Admin, list of games: `https://mikkelkaas.github.io/ch2cpacman/#/admin`
+- Admin, one game: `https://mikkelkaas.github.io/ch2cpacman/#/admin/<gameId>`
 
 Design: `docs/superpowers/specs/2026-09-17-ch2cpacman-design.md`.
 
 ## Running the event
 
-1. Open the admin page on a laptop.
+1. Open the admin page on a laptop. It lists the games; create one and open it.
+   Each game has its own settings, dots, teams and standings. Team codes are
+   unique across all games, so a runner only ever types the code.
 2. **Indstillinger**: set minutes per team (default 10). Click *Sæt startpunkt*,
-   then click the map where the teams start.
+   then click the map where the teams start. Pick a *Korttema* for the runner's
+   map: Nat (dark inverted), Neon, Lys (plain), Amber or Grøn.
 3. **Prikker**: set *Point for nye prikker*, then click the map once per dot of
    that value; change the number and continue with the next value. Drag a dot to
    move it; drag the map to pan. The list is sorted by distance from the start, so give the far ones more
@@ -75,9 +79,14 @@ value before clicking the map.
 Four cruttelut collections. `GET https://cruttelut.kaasfrich.dk/rest/<name>`
 returns the whole collection.
 
+Every record except games carries a `gameId`. Records from before games existed
+have none; the games page adopts them into the oldest game (creating "Spil 1"
+if needed) the first time it loads.
+
 | Collection | Contents |
 | --- | --- |
-| `ch2cpacman_settings` | one document: `phaseMinutes`, `start` |
+| `ch2cpacman_games` | `name`, `createdAt` |
+| `ch2cpacman_settings` | one per game: `phaseMinutes`, `start`, `mapTheme`, ghost settings |
 | `ch2cpacman_teams` | `name`, `code`, `color`, `createdAt`, `startedAt` |
 | `ch2cpacman_pellets` | `name`, `lat`, `lng`, `radiusM`, `points`, `kind` (`normal`, `power`, `double`) |
 | `ch2cpacman_captures` | append-only: `teamId`, `pelletId`, `capturedAt`, `lat`, `lng`, `clientId` |
@@ -109,9 +118,10 @@ To test against throwaway collections instead of the live ones, build with
 `VITE_COLLECTION_PREFIX=ch2cpacman_test_` and drop the `ch2cpacman_test_*`
 collections afterwards.
 
-The runner's map tiles are plain OpenStreetMap inverted to a night look in CSS
-(`.dark-tiles`); the hosted dark basemaps now require API keys. The admin page is
-deliberately unthemed: the arcade look is for players only.
+The runner's map tiles are plain OpenStreetMap recoloured with CSS filters, one
+preset per theme (`.theme-*` in `src/styles.css`); the hosted dark basemaps now
+require API keys. The admin page is deliberately unthemed: the arcade look is
+for players only.
 
 ## Manual checklist before the event (real phone, HTTPS)
 

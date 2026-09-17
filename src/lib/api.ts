@@ -1,4 +1,4 @@
-import type { Capture, GameEvent, NewRecord, Pellet, Settings, Team } from './types';
+import type { Capture, Game, GameEvent, NewRecord, Pellet, Settings, Team } from './types';
 
 export const BASE = 'https://cruttelut.kaasfrich.dk/rest';
 /** Collection prefix; a test build can point at throwaway collections. */
@@ -44,6 +44,7 @@ function collection<T extends { _id: string }>(name: string) {
 }
 
 export const api = {
+  games: collection<Game>(`${PREFIX}games`),
   settings: collection<Settings>(`${PREFIX}settings`),
   teams: collection<Team>(`${PREFIX}teams`),
   pellets: collection<Pellet>(`${PREFIX}pellets`),

@@ -20,6 +20,17 @@ describe('capture queue', () => {
     enqueue(qc('a'));
     expect(pending()).toHaveLength(1);
   });
+  it('keeps a capture enqueued while another was uploading', async () => {
+    enqueue(qc('a'));
+    const post = vi.fn(async (c: QueuedCapture) => {
+      // A second pellet is eaten mid-upload.
+      if (c.clientId === 'a') enqueue(qc('b'));
+    });
+    const result = await drain(post);
+    expect(result).toEqual({ sent: 1, left: 1 });
+    expect(pending().map(c => c.clientId)).toEqual(['b']);
+  });
+
   it('removes sent captures and keeps failed ones, stopping at the first failure', async () => {
     enqueue(qc('a'));
     enqueue(qc('b'));

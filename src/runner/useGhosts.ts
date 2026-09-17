@@ -74,7 +74,7 @@ export function useGhosts({ active, fix, pellets, team, settings, initialEvents 
       }
 
       for (const event of events) {
-        eventQueue.enqueue({ teamId: team._id, type: event.type, at: new Date(nowMs).toISOString(), points: event.points, clientId: crypto.randomUUID() });
+        eventQueue.enqueue({ gameId: team.gameId, teamId: team._id, type: event.type, at: new Date(nowMs).toISOString(), points: event.points, clientId: crypto.randomUUID() });
         setEventPoints(p => p + event.points);
         setBanner({ type: event.type, points: event.points, at: nowMs });
         if (event.type === 'ghost_caught') sound.hurt();

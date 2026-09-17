@@ -34,19 +34,19 @@ export function createQueue<T extends { clientId: string }>(key: string) {
       write(queue);
     },
     async drain(post: (record: T) => Promise<unknown>): Promise<{ sent: number; left: number }> {
-      let queue = read();
       let sent = 0;
-      for (const record of [...queue]) {
+      for (const record of read()) {
         try {
           await post(record);
         } catch {
           break;
         }
         sent += 1;
-        queue = queue.filter(r => r.clientId !== record.clientId);
-        write(queue);
+        // Re-read before removing: a record enqueued while this one was in
+        // flight must survive. Writing back a stale snapshot used to drop it.
+        write(read().filter(r => r.clientId !== record.clientId));
       }
-      return { sent, left: queue.length };
+      return { sent, left: read().length };
     },
   };
 }

@@ -48,8 +48,13 @@ export function useCaptureEngine({ active, fix, pellets, team, settings, initial
     if (draining.current) return;
     draining.current = true;
     try {
-      const { left } = await drain(c => api.captures.create(c));
-      setPendingCount(left);
+      // Keep going while uploads succeed: a capture enqueued mid-drain would
+      // otherwise wait for the retry timer.
+      for (;;) {
+        const { sent, left } = await drain(c => api.captures.create(c));
+        setPendingCount(left);
+        if (left === 0 || sent === 0) break;
+      }
     } finally {
       draining.current = false;
     }
@@ -65,6 +70,7 @@ export function useCaptureEngine({ active, fix, pellets, team, settings, initial
     for (const pellet of hits) {
       next.add(pellet._id);
       enqueue({
+        gameId: team.gameId,
         teamId: team._id,
         pelletId: pellet._id,
         capturedAt,

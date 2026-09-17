@@ -4,9 +4,10 @@ import type { Fix } from '../hooks/useGeolocation';
 import { headingDeg } from '../lib/geo';
 import type { Ghost } from '../lib/ghosts';
 import { boundsOf, createDarkMap, ghostIcon, pacmanIcon, pelletIcon, startIcon } from '../lib/leaflet';
-import type { LatLng, Pellet } from '../lib/types';
+import type { LatLng, MapTheme, Pellet } from '../lib/types';
 
 interface Props {
+  theme: MapTheme;
   pellets: readonly Pellet[];
   eatenIds: ReadonlySet<string>;
   start: LatLng | null;
@@ -18,7 +19,7 @@ interface Props {
   dimmed?: boolean;
 }
 
-export default function RunnerMap({ pellets, eatenIds, start, fix, ghosts = [], ghostMode = 'normal', shielded = false, dimmed = false }: Props) {
+export default function RunnerMap({ theme, pellets, eatenIds, start, fix, ghosts = [], ghostMode = 'normal', shielded = false, dimmed = false }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const pelletLayers = useRef(new Map<string, L.Marker>());
@@ -132,7 +133,7 @@ export default function RunnerMap({ pellets, eatenIds, start, fix, ghosts = [], 
   }, [shielded, fix]);
 
   return (
-    <div className="relative h-full w-full">
+    <div className={`relative h-full w-full theme-${theme}`}>
       <div ref={containerRef} className="h-full w-full arcade-map" />
       {dimmed && <div className="absolute inset-0 bg-black/70 z-[400] pointer-events-none" />}
     </div>
