@@ -34,7 +34,14 @@ body { font-family: var(--font-body); -webkit-tap-highlight-color: transparent; 
   box-shadow: 0 0 6px #ffb8ae, 0 0 14px rgba(255, 184, 174, 0.7);
   display: flex; align-items: center; justify-content: center;
 }
-.pellet-dot.power { animation: power-pulse 1s ease-in-out infinite; }
+.pellet-dot.kind-power { animation: power-pulse 1s ease-in-out infinite; background: #fff; box-shadow: 0 0 10px #fff, 0 0 22px rgba(255,255,255,0.7); }
+.pellet-dot.kind-double { background: #00ffff; box-shadow: 0 0 8px #00ffff, 0 0 18px rgba(0,255,255,0.7); }
+.pellet-dot.kind-double .pellet-label { color: #00ffff; }
+.ghost { filter: drop-shadow(0 0 5px rgba(255,255,255,0.5)); }
+.ghost.flashing { animation: blink 0.25s steps(2, start) infinite; }
+.danger-vignette { pointer-events: none; position: absolute; inset: 0; z-index: 440; box-shadow: inset 0 0 80px 30px rgba(255, 0, 0, 0.6); animation: blink 0.6s steps(2, start) infinite; }
+.power-vignette { pointer-events: none; position: absolute; inset: 0; z-index: 440; box-shadow: inset 0 0 60px 20px rgba(33, 33, 255, 0.6); }
+.shield-ring { border-radius: 9999px; border: 2px dashed #00ffff; opacity: 0.8; }
 @keyframes power-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
 .pellet-dot.eaten { animation: eaten 0.3s ease-in both; }
 @keyframes eaten { to { transform: scale(0); opacity: 0; } }
@@ -60,5 +67,8 @@ body { font-family: var(--font-body); -webkit-tap-highlight-color: transparent; 
   cursor: grab;
 }
 .plain-pellet.selected { background: #f59e0b; color: #000; }
+.plain-pellet.kind-power { background: #7c3aed; }
+.plain-pellet.kind-double { background: #0891b2; font-size: 11px; }
+.plain-pellet.selected.kind-power, .plain-pellet.selected.kind-double { background: #f59e0b; }
 .leaflet-marker-draggable .plain-pellet:active { cursor: grabbing; }
 .plain-start { width: 18px; height: 18px; background: #16a34a; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }

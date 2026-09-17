@@ -17,7 +17,9 @@ export default function Scoreboard({ scores }: { scores: readonly TeamScore[] })
               <th className="py-1 pr-2 w-10">{da.rank}</th>
               <th className="py-1 pr-2">{da.team}</th>
               <th className="py-1 pr-2 text-right">{da.pointsColumn}</th>
-              <th className="py-1 text-right">{da.eaten}</th>
+              <th className="py-1 pr-2 text-right">{da.eaten}</th>
+              <th className="py-1 pr-2 text-right" title={da.caughtColumn}>👻</th>
+              <th className="py-1 text-right" title={da.eatenGhostsColumn}>😋</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -44,12 +46,16 @@ function Row({ score, rank, open, onToggle }: { score: TeamScore; rank: number; 
           <span className="text-gray-900 font-medium">{score.team.name}</span>
         </td>
         <td className="py-2 pr-2 text-right font-semibold text-gray-900 tabular-nums">{score.points}</td>
-        <td className="py-2 text-right text-gray-700 tabular-nums">{score.pellets.length}</td>
+        <td className="py-2 pr-2 text-right text-gray-700 tabular-nums">{score.pellets.length}</td>
+        <td className="py-2 pr-2 text-right text-gray-700 tabular-nums">{score.caught}</td>
+        <td className="py-2 text-right text-gray-700 tabular-nums">{score.ghostsEaten}</td>
       </tr>
       {open && (
         <tr>
-          <td colSpan={4} className="pb-3 pl-10 text-xs text-gray-500">
-            {score.pellets.length === 0 ? '–' : score.pellets.map(p => `${p.name} (${p.points})`).join(' · ')}
+          <td colSpan={6} className="pb-3 pl-10 text-xs text-gray-500">
+            {score.scored.length === 0 ? '–' : score.scored.map(s => `${s.pellet.name} (${s.pellet.points}${s.multiplier > 1 ? ` ×${s.multiplier}` : ''})`).join(' · ')}
+            {score.caught > 0 && ` · ${da.ghostsCaught(score.caught)}`}
+            {score.ghostsEaten > 0 && ` · ${da.ghostsEaten(score.ghostsEaten)}`}
           </td>
         </tr>
       )}

@@ -221,7 +221,30 @@ Start writes `startedAt`, walking into a pellet eats it, airplane mode then back
 delivers the queued capture, reload mid-phase resumes, countdown end locks the
 screen, admin sees the score.
 
+## Ghosts, power pellets and Dobbelt (added 2026-09-17)
+
+**Ghosts** are simulated on the phone (`lib/ghosts.ts`), `ghostCount` of them
+(default 2). They spawn when the phase starts at pellets at least 100 m from the
+runner, wait `ghostHeadStartS` (60), then move straight toward the last GPS fix
+at `ghostSpeedMps` (1.5), ignoring terrain. Within 10 m of the runner the team
+is caught: `−ghostPenalty` (2), a hurt sound, the ghost respawns far away and
+the team is immune for 20 s (dashed ring). Within 40 m a siren plays and the
+screen edge pulses red. Catches are posted as `ch2cpacman_events` records with
+their signed points, so the admin subtracts exactly what the phone showed.
+
+**Power pellets** (`kind: 'power'`) turn all ghosts blue for `powerSeconds`
+(20). Blue ghosts flee at 1 m/s; coming within 10 m eats one for `+ghostBonus`
+(3) and respawns it. Ghosts flash white for the last 5 s.
+
+**Dobbelt** (`kind: 'double'`) doubles pellets eaten in the following
+`doubleSeconds` (60), never itself or ghost bonuses. The window is derived from
+capture timestamps in `scoreTeam`, which both the phone and the admin use.
+
+Score = Σ pellet × multiplier + Σ events, floored at 0. Admin: the settings
+above, a type per pellet and a type for new dots, and catches / ghosts eaten in
+the standings. The briefing adds a line per feature that is in play.
+
 ## Out of scope
 
 Routes, home base, voice, photos, questions, multiple games, authentication,
-pellet scarcity between teams, respawns, anti-spoofing.
+pellet scarcity between teams, bonus fruit, human ghosts, anti-spoofing.

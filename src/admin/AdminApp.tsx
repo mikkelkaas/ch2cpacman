@@ -5,7 +5,7 @@ import { da, formatClock } from '../i18n/da';
 import { api } from '../lib/api';
 import { rankTeams } from '../lib/score';
 import { generateTeamCode } from '../lib/teamCode';
-import type { Capture, LatLng, Pellet, Settings, Team } from '../lib/types';
+import type { Capture, GameEvent, LatLng, Pellet, PelletKind, Settings, Team } from '../lib/types';
 import AdminMap from './AdminMap';
 import type { MapMode } from './AdminMap';
 import PelletsPanel from './PelletsPanel';
@@ -23,12 +23,14 @@ export default function AdminApp() {
   const [pellets, setPellets] = useState<Pellet[] | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [captures, setCaptures] = useState<Capture[]>([]);
+  const [events, setEvents] = useState<GameEvent[]>([]);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [mode, setMode] = useState<MapMode>('idle');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Point value for the next dots. Set it once, click all the 1-point spots,
   // change it, click all the 2-point spots, and so on. Not persisted.
   const [newPoints, setNewPoints] = useState(1);
+  const [newKind, setNewKind] = useState<PelletKind>('normal');
   const now = useNow(1000);
 
   const loadStatic = useCallback(async () => {
@@ -40,9 +42,10 @@ export default function AdminApp() {
   }, []);
 
   const loadLive = useCallback(async () => {
-    const [teamList, captureList] = await Promise.all([api.teams.list(), api.captures.list()]);
+    const [teamList, captureList, eventList] = await Promise.all([api.teams.list(), api.captures.list(), api.events.list()]);
     setTeams(teamList);
     setCaptures(captureList);
+    setEvents(eventList);
   }, []);
 
   const staticPoll = usePolling(loadStatic, 60 * 60_000);
@@ -70,7 +73,7 @@ export default function AdminApp() {
       return;
     }
     void write(async () => {
-      const created = await api.pellets.create({ name: `Prik ${pellets.length + 1}`, lat: latlng.lat, lng: latlng.lng, radiusM: DEFAULT_RADIUS_M, points: newPoints });
+      const created = await api.pellets.create({ name: `Prik ${pellets.length + 1}`, lat: latlng.lat, lng: latlng.lng, radiusM: DEFAULT_RADIUS_M, points: newPoints, kind: newKind });
       setPellets(list => [...(list ?? []), created]);
       setSelectedId(created._id);
     });
@@ -116,8 +119,10 @@ export default function AdminApp() {
 
   const deleteTeamCaptures = async (team: Team) => {
     const mine = captures.filter(c => c.teamId === team._id);
-    await Promise.all(mine.map(c => api.captures.remove(c._id)));
+    const myEvents = events.filter(e => e.teamId === team._id);
+    await Promise.all([...mine.map(c => api.captures.remove(c._id)), ...myEvents.map(e => api.events.remove(e._id))]);
     setCaptures(list => list.filter(c => c.teamId !== team._id));
+    setEvents(list => list.filter(e => e.teamId !== team._id));
   };
 
   const resetTeam = (team: Team) =>
@@ -135,8 +140,8 @@ export default function AdminApp() {
     });
 
   const scores = useMemo(
-    () => (settings && pellets ? rankTeams(teams, captures, pellets, settings) : []),
-    [teams, captures, pellets, settings],
+    () => (settings && pellets ? rankTeams(teams, captures, pellets, settings, events) : []),
+    [teams, captures, pellets, settings, events],
   );
 
   const shell = (children: React.ReactNode) => <div className="min-h-full bg-gray-100 text-gray-900 font-body">{children}</div>;
@@ -194,7 +199,7 @@ export default function AdminApp() {
           <Scoreboard scores={scores} />
           <TeamsPanel teams={teams} phaseMinutes={settings.phaseMinutes} now={now} onAdd={addTeams} onReset={resetTeam} onDelete={deleteTeam} />
           <SettingsPanel settings={settings} mode={mode} onSave={saveSettings} onSetMode={setMode} />
-          <PelletsPanel pellets={pellets} start={settings.start} selectedId={selectedId} newPoints={newPoints} onNewPointsChange={setNewPoints} onSelect={setSelectedId} onSave={savePellet} onDelete={deletePellet} />
+          <PelletsPanel pellets={pellets} start={settings.start} selectedId={selectedId} newPoints={newPoints} onNewPointsChange={setNewPoints} newKind={newKind} onNewKindChange={setNewKind} onSelect={setSelectedId} onSave={savePellet} onDelete={deletePellet} />
         </div>
       </div>
     </div>,

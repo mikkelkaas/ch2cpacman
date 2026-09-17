@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import type { Fix } from '../hooks/useGeolocation';
 import { headingDeg } from '../lib/geo';
-import { boundsOf, createDarkMap, pacmanIcon, pelletIcon, startIcon } from '../lib/leaflet';
+import type { Ghost } from '../lib/ghosts';
+import { boundsOf, createDarkMap, ghostIcon, pacmanIcon, pelletIcon, startIcon } from '../lib/leaflet';
 import type { LatLng, Pellet } from '../lib/types';
 
 interface Props {
@@ -10,10 +11,14 @@ interface Props {
   eatenIds: ReadonlySet<string>;
   start: LatLng | null;
   fix: Fix | null;
+  ghosts?: readonly Ghost[];
+  ghostMode?: 'normal' | 'frightened' | 'flashing';
+  /** Draw a dashed ring around the runner while immune after a catch. */
+  shielded?: boolean;
   dimmed?: boolean;
 }
 
-export default function RunnerMap({ pellets, eatenIds, start, fix, dimmed = false }: Props) {
+export default function RunnerMap({ pellets, eatenIds, start, fix, ghosts = [], ghostMode = 'normal', shielded = false, dimmed = false }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const pelletLayers = useRef(new Map<string, L.Marker>());
@@ -21,6 +26,8 @@ export default function RunnerMap({ pellets, eatenIds, start, fix, dimmed = fals
   const startMarker = useRef<L.Marker | null>(null);
   const runnerMarker = useRef<L.Marker | null>(null);
   const accuracyRing = useRef<L.Circle | null>(null);
+  const shieldRing = useRef<L.Circle | null>(null);
+  const ghostMarkers = useRef(new Map<number, L.Marker>());
   const prevFix = useRef<Fix | null>(null);
   const headingRef = useRef(90);
   const fitted = useRef(false);
@@ -90,6 +97,39 @@ export default function RunnerMap({ pellets, eatenIds, start, fix, dimmed = fals
       accuracyRing.current?.setLatLng(pos).setRadius(fix.accuracyM);
     }
   }, [fix]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const seen = new Set<number>();
+    for (const ghost of ghosts) {
+      seen.add(ghost.id);
+      const existing = ghostMarkers.current.get(ghost.id);
+      if (existing) {
+        existing.setLatLng([ghost.lat, ghost.lng]).setIcon(ghostIcon(ghost.color, ghostMode));
+      } else {
+        ghostMarkers.current.set(ghost.id, L.marker([ghost.lat, ghost.lng], { icon: ghostIcon(ghost.color, ghostMode), interactive: false, zIndexOffset: 900 }).addTo(map));
+      }
+    }
+    for (const [id, marker] of ghostMarkers.current) {
+      if (!seen.has(id)) {
+        marker.remove();
+        ghostMarkers.current.delete(id);
+      }
+    }
+  }, [ghosts, ghostMode]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !fix) return;
+    if (shielded) {
+      shieldRing.current ??= L.circle([fix.lat, fix.lng], { radius: 12, color: '#00ffff', dashArray: '4 4', weight: 2, fill: false }).addTo(map);
+      shieldRing.current.setLatLng([fix.lat, fix.lng]);
+    } else {
+      shieldRing.current?.remove();
+      shieldRing.current = null;
+    }
+  }, [shielded, fix]);
 
   return (
     <div className="relative h-full w-full">

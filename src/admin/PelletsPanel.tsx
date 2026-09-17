@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { da } from '../i18n/da';
 import { haversineM } from '../lib/geo';
-import type { LatLng, Pellet } from '../lib/types';
+import type { LatLng, Pellet, PelletKind } from '../lib/types';
 import { inputClass, Panel } from './ui';
 
 interface Props {
@@ -11,12 +11,16 @@ interface Props {
   /** Point value the next map click creates a pellet with. */
   newPoints: number;
   onNewPointsChange: (points: number) => void;
+  newKind: PelletKind;
+  onNewKindChange: (kind: PelletKind) => void;
   onSelect: (id: string | null) => void;
   onSave: (pellet: Pellet) => Promise<void>;
   onDelete: (pellet: Pellet) => Promise<void>;
 }
 
-export default function PelletsPanel({ pellets, start, selectedId, newPoints, onNewPointsChange, onSelect, onSave, onDelete }: Props) {
+const KINDS: PelletKind[] = ['normal', 'power', 'double'];
+
+export default function PelletsPanel({ pellets, start, selectedId, newPoints, onNewPointsChange, newKind, onNewKindChange, onSelect, onSave, onDelete }: Props) {
   const sorted = [...pellets]
     .map(p => ({ pellet: p, distance: start ? haversineM(start, p) : null }))
     .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
@@ -25,16 +29,28 @@ export default function PelletsPanel({ pellets, start, selectedId, newPoints, on
     <Panel
       title={<>{da.pellets} <span className="text-gray-400 font-normal">({pellets.length})</span></>}
       action={
-        <label className="flex items-center gap-2 text-sm text-gray-700">
-          {da.newPelletPoints}
-          <input
-            type="number"
-            min={1}
-            value={newPoints}
-            onChange={e => onNewPointsChange(Math.max(1, Math.round(Number(e.target.value) || 1)))}
-            className={`${inputClass} w-16 font-semibold`}
-          />
-        </label>
+        <div className="flex items-center gap-3 text-sm text-gray-700">
+          <label className="flex items-center gap-2">
+            {da.newPelletPoints}
+            <input
+              type="number"
+              min={1}
+              value={newPoints}
+              onChange={e => onNewPointsChange(Math.max(1, Math.round(Number(e.target.value) || 1)))}
+              className={`${inputClass} w-16 font-semibold`}
+            />
+          </label>
+          <label className="flex items-center gap-2">
+            {da.newPelletKind}
+            <select value={newKind} onChange={e => onNewKindChange(e.target.value as PelletKind)} className={inputClass}>
+              {KINDS.map(k => (
+                <option key={k} value={k}>
+                  {da.kinds[k]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       }
     >
       <p className="text-sm text-gray-500">{da.mapHint}</p>
@@ -45,6 +61,7 @@ export default function PelletsPanel({ pellets, start, selectedId, newPoints, on
             <tr>
               <th className="py-1 pr-2">{da.pointsLabel}</th>
               <th className="py-1 pr-2">{da.name}</th>
+              <th className="py-1 pr-2">{da.kind}</th>
               <th className="py-1 pr-2">{da.radius}</th>
               <th className="py-1 pr-2 text-right">{da.distance}</th>
               <th className="py-1" />
@@ -92,6 +109,11 @@ function PelletRow({ pellet, distance, selected, onSelect, onSave, onDelete }: R
     setDraft(next);
     if (next.name !== pellet.name || next.points !== pellet.points || next.radiusM !== pellet.radiusM) void onSave(next);
   };
+  const changeKind = (kind: PelletKind) => {
+    const next = { ...draft, kind };
+    setDraft(next);
+    void onSave(next);
+  };
   const blurOnEnter = (e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && e.currentTarget.blur();
 
   return (
@@ -101,6 +123,15 @@ function PelletRow({ pellet, distance, selected, onSelect, onSave, onDelete }: R
       </td>
       <td className="py-1.5 pr-2" onClick={e => e.stopPropagation()}>
         <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} onBlur={commit} onKeyDown={blurOnEnter} className={`${inputClass} w-full min-w-24`} aria-label={da.name} />
+      </td>
+      <td className="py-1.5 pr-2" onClick={e => e.stopPropagation()}>
+        <select value={draft.kind ?? 'normal'} onChange={e => changeKind(e.target.value as PelletKind)} className={inputClass} aria-label={da.kind}>
+          {KINDS.map(k => (
+            <option key={k} value={k}>
+              {da.kinds[k]}
+            </option>
+          ))}
+        </select>
       </td>
       <td className="py-1.5 pr-2" onClick={e => e.stopPropagation()}>
         <input type="number" min={1} step={1} value={draft.radiusM} onChange={e => setDraft({ ...draft, radiusM: Number(e.target.value) })} onBlur={commit} onKeyDown={blurOnEnter} className={`${inputClass} w-16`} aria-label={da.radius} />

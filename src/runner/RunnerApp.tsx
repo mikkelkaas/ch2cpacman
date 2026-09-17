@@ -10,16 +10,19 @@ import { da } from '../i18n/da';
 import { api } from '../lib/api';
 import { phaseState, remainingMs } from '../lib/phase';
 import { pending } from '../lib/queue';
+import { isFrightened } from '../lib/ghosts';
 import { dedupeCaptures } from '../lib/score';
+import { GHOST_WARN_M, withDefaults } from '../lib/settings';
 import { sound } from '../lib/sound';
 import { storage } from '../lib/storage';
-import type { Capture, Pellet, Settings, Team } from '../lib/types';
+import type { Capture, GameEvent, GameSettings, Pellet, Settings, Team } from '../lib/types';
 import Briefing from './Briefing';
 import CodeScreen from './CodeScreen';
 import GameOver from './GameOver';
 import Hud from './Hud';
 import RunnerMap from './RunnerMap';
 import { useCaptureEngine } from './useCaptureEngine';
+import { useGhosts } from './useGhosts';
 
 interface Loaded {
   settings: Settings | null;
@@ -32,6 +35,7 @@ export default function RunnerApp() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [teamId, setTeamId] = useState(() => storage.getTeamId());
   const [captures, setCaptures] = useState<Capture[] | null>(null);
+  const [events, setEvents] = useState<GameEvent[]>([]);
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -54,10 +58,11 @@ export default function RunnerApp() {
       return;
     }
     let cancelled = false;
-    api.captures
-      .list()
-      .then(all => {
-        if (!cancelled) setCaptures(all.filter(c => c.teamId === teamId));
+    Promise.all([api.captures.list(), api.events.list().catch(() => [] as GameEvent[])])
+      .then(([allCaptures, allEvents]) => {
+        if (cancelled) return;
+        setCaptures(allCaptures.filter(c => c.teamId === teamId));
+        setEvents(allEvents.filter(e => e.teamId === teamId));
       })
       .catch(() => {
         if (!cancelled) setCaptures([]);
@@ -100,9 +105,10 @@ export default function RunnerApp() {
     <Game
       key={team._id}
       team={team}
-      settings={settings}
+      settings={withDefaults(settings)}
       pellets={pellets}
       captures={captures}
+      events={events}
       onTeamChange={updated => setData(d => (d ? { ...d, teams: d.teams.map(t => (t._id === updated._id ? updated : t)) } : d))}
       onLeaveTeam={() => {
         storage.setTeamId(null);
@@ -114,14 +120,15 @@ export default function RunnerApp() {
 
 interface GameProps {
   team: Team;
-  settings: Settings;
+  settings: GameSettings;
   pellets: Pellet[];
   captures: Capture[];
+  events: GameEvent[];
   onTeamChange: (team: Team) => void;
   onLeaveTeam: () => void;
 }
 
-function Game({ team, settings, pellets, captures, onTeamChange, onLeaveTeam }: GameProps) {
+function Game({ team, settings, pellets, captures, events, onTeamChange, onLeaveTeam }: GameProps) {
   const now = useNow(250);
   const state = phaseState(team, settings.phaseMinutes, now);
   const [briefed, setBriefed] = useState(state !== 'idle');
@@ -138,7 +145,30 @@ function Game({ team, settings, pellets, captures, onTeamChange, onLeaveTeam }: 
     return ids;
   }, [captures, team._id]);
 
-  const engine = useCaptureEngine({ active: state === 'running', fix, pellets, team, initialEatenIds });
+  const ghosts = useGhosts({ active: state === 'running', fix, pellets, team, settings, initialEvents: events });
+  const engine = useCaptureEngine({
+    active: state === 'running',
+    fix,
+    pellets,
+    team,
+    settings,
+    initialEatenIds,
+    initialCaptures: captures,
+    onEaten: pellet => {
+      if (pellet.kind === 'power') ghosts.powerEaten();
+    },
+  });
+  const points = Math.max(0, engine.points + ghosts.eventPoints);
+  const frightened = ghosts.ghosts ? isFrightened(ghosts.ghosts, now) : false;
+  const ghostMode = !frightened ? 'normal' : ghosts.ghosts!.frightenedUntilMs - now < 5000 ? 'flashing' : 'frightened';
+  const shielded = (ghosts.ghosts?.immuneUntilMs ?? 0) > now;
+  // Dobbelt left: from the most recent double pellet eaten within the window.
+  const doubleMs = Math.max(
+    0,
+    ...pellets
+      .filter(p => p.kind === 'double' && engine.captureTimes.has(p._id))
+      .map(p => Date.parse(engine.captureTimes.get(p._id)!) + settings.doubleSeconds * 1000 - now),
+  );
 
   const start = async () => {
     setStarting(true);
@@ -162,14 +192,23 @@ function Game({ team, settings, pellets, captures, onTeamChange, onLeaveTeam }: 
   }
 
   if (state === 'idle' && !briefed) {
-    return <Briefing teamName={team.name} phaseMinutes={settings.phaseMinutes} onDone={() => setBriefed(true)} />;
+    return <Briefing teamName={team.name} settings={settings} pellets={pellets} onDone={() => setBriefed(true)} />;
   }
 
   const eatenCount = pellets.filter(p => engine.eatenIds.has(p._id)).length;
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <RunnerMap pellets={pellets} eatenIds={engine.eatenIds} start={settings.start} fix={fix} dimmed={state === 'over'} />
+      <RunnerMap
+        pellets={pellets}
+        eatenIds={engine.eatenIds}
+        start={settings.start}
+        fix={fix}
+        ghosts={state === 'running' ? ghosts.ghosts?.ghosts : []}
+        ghostMode={ghostMode}
+        shielded={state === 'running' && shielded}
+        dimmed={state === 'over'}
+      />
 
       {state === 'idle' && (
         <div className="absolute inset-x-0 bottom-0 z-[450] p-4 bg-gradient-to-t from-black via-black/90 to-transparent flex flex-col items-center gap-3">
@@ -193,9 +232,13 @@ function Game({ team, settings, pellets, captures, onTeamChange, onLeaveTeam }: 
       {state === 'running' && (
         <Hud
           remainingMs={remainingMs(team.startedAt!, settings.phaseMinutes, now)}
-          points={engine.points}
+          points={points}
           pendingCount={engine.pendingCount}
           onShowRules={() => setRulesOpen(true)}
+          doubleMs={doubleMs}
+          danger={ghosts.nearest < GHOST_WARN_M}
+          power={frightened}
+          ghostBanner={ghosts.banner}
         />
       )}
 
@@ -207,9 +250,9 @@ function Game({ team, settings, pellets, captures, onTeamChange, onLeaveTeam }: 
         </div>
       )}
 
-      {state === 'over' && <GameOver points={engine.points} pelletCount={eatenCount} teamName={team.name} />}
+      {state === 'over' && <GameOver points={points} pelletCount={eatenCount} teamName={team.name} />}
 
-      {rulesOpen && <Briefing overlay teamName={team.name} phaseMinutes={settings.phaseMinutes} onDone={() => setRulesOpen(false)} />}
+      {rulesOpen && <Briefing overlay teamName={team.name} settings={settings} pellets={pellets} onDone={() => setRulesOpen(false)} />}
     </div>
   );
 }

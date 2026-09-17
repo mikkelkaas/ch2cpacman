@@ -42,11 +42,32 @@ a wake lock where the browser supports it. Captures made without signal are
 queued on the phone and uploaded when it reconnects; the phone's own score counts
 them immediately.
 
+## Ghosts, power pellets and Dobbelt
+
+- **Spøgelser.** Ghosts live on the phone only. They wait out a head start, then
+  walk straight toward the runner's last GPS fix, ignoring terrain. Within 10 m
+  the team is caught, loses points and is immune for 20 seconds while the ghost
+  jumps at least 100 m away. A ghost within 40 m sets off a siren and a red
+  pulse. Every catch is posted as an event the scoreboard subtracts.
+- **Power.** A dot of type *Power* turns every ghost blue for a while; blue
+  ghosts flee, and catching one earns bonus points. They flash white for the
+  last 5 seconds.
+- **Dobbelt.** A dot of type *Dobbelt* doubles every pellet eaten in the next
+  minute, not itself and not ghost bonuses. The window is computed from capture
+  timestamps on both the phone and the admin page.
+
+All numbers are in *Indstillinger*: number of ghosts (0 turns them off), speed,
+head start, points lost per catch, points per eaten ghost, power and Dobbelt
+durations. Defaults: 2 ghosts, 1.5 m/s, 60 s head start, 2 points lost, 3 points
+per ghost, 20 s power, 60 s Dobbelt. Set the type for new dots next to the point
+value before clicking the map.
+
 ## Rules of scoring
 
 - A team's window is `startedAt` to `startedAt + minutes`, plus 30 seconds grace
   for an upload that lands late. Captures outside it do not count.
 - Each team can eat each pellet once. Pellets are not removed for other teams.
+- Points = pellets × Dobbelt multiplier + ghost bonuses − catches, never below 0.
 - Every team sees the same full map, whether it plays at 9:00 or 16:00.
 
 ## Storage
@@ -58,8 +79,9 @@ returns the whole collection.
 | --- | --- |
 | `ch2cpacman_settings` | one document: `phaseMinutes`, `start` |
 | `ch2cpacman_teams` | `name`, `code`, `color`, `createdAt`, `startedAt` |
-| `ch2cpacman_pellets` | `name`, `lat`, `lng`, `radiusM`, `points` |
+| `ch2cpacman_pellets` | `name`, `lat`, `lng`, `radiusM`, `points`, `kind` (`normal`, `power`, `double`) |
 | `ch2cpacman_captures` | append-only: `teamId`, `pelletId`, `capturedAt`, `lat`, `lng`, `clientId` |
+| `ch2cpacman_events` | append-only: `teamId`, `type` (`ghost_caught`, `ghost_eaten`), `at`, `points`, `clientId` |
 
 Scores are never stored; both pages compute them from captures. Duplicate
 captures of the same pellet by the same team are ignored, so retries are safe.
@@ -83,6 +105,10 @@ pnpm build        # dist/
 
 Pushing to `main` runs `.github/workflows/pages.yml`: lint, test, build, deploy.
 
+To test against throwaway collections instead of the live ones, build with
+`VITE_COLLECTION_PREFIX=ch2cpacman_test_` and drop the `ch2cpacman_test_*`
+collections afterwards.
+
 The runner's map tiles are plain OpenStreetMap inverted to a night look in CSS
 (`.dark-tiles`); the hosted dark basemaps now require API keys. The admin page is
 deliberately unthemed: the arcade look is for players only.
@@ -96,5 +122,8 @@ deliberately unthemed: the arcade look is for players only.
 - [ ] Walking into a pellet eats it: pop, chomp, score
 - [ ] Airplane mode, eat a pellet, back online: capture arrives, admin score updates
 - [ ] Reload mid-phase: eaten pellets stay eaten, countdown resumes
+- [ ] A ghost approaches: siren, red pulse; a catch shows FANGET and lowers the score
+- [ ] Power dot turns ghosts blue; catching one adds the bonus
+- [ ] Dobbelt banner counts down and the next dot counts double
 - [ ] Countdown reaches zero: GAME OVER, no more captures
 - [ ] Admin Nulstil returns the phone to the rules screen on reload

@@ -23,21 +23,36 @@ export function createPlainMap(container: HTMLElement, options: L.MapOptions = {
   return map;
 }
 
-export const POWER_PELLET_POINTS = 3;
-
-/** Dot diameter in px: small dots for 1 point, growing with value. */
-export function pelletSizePx(points: number): number {
-  return Math.min(34, 12 + points * 4);
+/** Dot diameter in px: small dots for 1 point, growing with value; power pellets are big. */
+export function pelletSizePx(pellet: Pellet): number {
+  if (pellet.kind === 'power') return 34;
+  return Math.min(30, 12 + pellet.points * 4);
 }
 
 export function pelletIcon(pellet: Pellet, extraClass = ''): L.DivIcon {
-  const size = pelletSizePx(pellet.points);
-  const power = pellet.points >= POWER_PELLET_POINTS ? 'power' : '';
+  const size = pelletSizePx(pellet);
+  const kind = pellet.kind ?? 'normal';
+  const label = kind === 'double' ? `×2 ${pellet.points}` : `${pellet.points}`;
   return L.divIcon({
     className: '',
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
-    html: `<div class="pellet-dot ${power} ${extraClass}" style="width:${size}px;height:${size}px"><span class="pellet-label">${pellet.points}</span></div>`,
+    html: `<div class="pellet-dot kind-${kind} ${extraClass}" style="width:${size}px;height:${size}px"><span class="pellet-label">${label}</span></div>`,
+  });
+}
+
+/** Classic ghost sprite. Blue while frightened, flashing white just before it wears off. */
+export function ghostIcon(color: string, mode: 'normal' | 'frightened' | 'flashing'): L.DivIcon {
+  const fill = mode === 'normal' ? color : mode === 'frightened' ? '#2121ff' : '#ffffff';
+  const eyes = mode === 'normal'
+    ? '<circle cx="36" cy="42" r="9" fill="#fff"/><circle cx="64" cy="42" r="9" fill="#fff"/><circle cx="39" cy="44" r="4" fill="#2121ff"/><circle cx="67" cy="44" r="4" fill="#2121ff"/>'
+    : '<circle cx="36" cy="44" r="4" fill="#ffb8ae"/><circle cx="64" cy="44" r="4" fill="#ffb8ae"/><path d="M28 66 l8 -6 l8 6 l8 -6 l8 6 l8 -6 l8 6" stroke="#ffb8ae" stroke-width="4" fill="none"/>';
+  return L.divIcon({
+    className: '',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    html: `<svg class="ghost ${mode}" viewBox="0 0 100 100" width="30" height="30">
+      <path d="M10 95 V50 A40 40 0 0 1 90 50 V95 L78 82 L66 95 L54 82 L42 95 L30 82 L18 95 Z" fill="${fill}"/>${eyes}</svg>`,
   });
 }
 
@@ -48,7 +63,7 @@ export function plainPelletIcon(pellet: Pellet, selected: boolean): L.DivIcon {
     className: '',
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
-    html: `<div class="plain-pellet ${selected ? 'selected' : ''}">${pellet.points}</div>`,
+    html: `<div class="plain-pellet ${selected ? 'selected' : ''} kind-${pellet.kind ?? 'normal'}">${pellet.kind === 'double' ? '×2' : pellet.points}</div>`,
   });
 }
 

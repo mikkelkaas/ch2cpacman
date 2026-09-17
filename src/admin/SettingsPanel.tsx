@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { da } from '../i18n/da';
-import type { Settings } from '../lib/types';
+import { withDefaults } from '../lib/settings';
+import type { GameSettings, Settings } from '../lib/types';
 import type { MapMode } from './AdminMap';
 import { Button, inputClass, Panel } from './ui';
 
@@ -22,6 +23,11 @@ export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Pro
   };
 
   const arming = mode === 'setStart';
+  const full = withDefaults(settings);
+  const numberField = (key: keyof Omit<GameSettings, '_id' | 'start' | 'phaseMinutes'>, label: string, min: number, step = 1) => (
+    <NumberField key={key} label={label} value={full[key]} min={min} step={step} onCommit={value => void onSave({ ...settings, [key]: value })} />
+  );
+
   return (
     <Panel title={da.settings}>
       <label className="flex items-center justify-between gap-3 text-sm text-gray-700">
@@ -47,6 +53,40 @@ export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Pro
         </Button>
       </div>
       {arming && <p className="text-amber-700 text-sm">{da.setStartHint}</p>}
+      <h3 className="text-xs font-semibold text-gray-500 uppercase pt-2">{da.ghostSettings}</h3>
+      {numberField('ghostCount', da.ghostCount, 0)}
+      {numberField('ghostSpeedMps', da.ghostSpeed, 0.1, 0.1)}
+      {numberField('ghostHeadStartS', da.ghostHeadStart, 0, 5)}
+      {numberField('ghostPenalty', da.ghostPenalty, 0)}
+      {numberField('ghostBonus', da.ghostBonus, 0)}
+      {numberField('powerSeconds', da.powerSeconds, 1)}
+      {numberField('doubleSeconds', da.doubleSeconds, 1)}
     </Panel>
+  );
+}
+
+function NumberField({ label, value, min, step, onCommit }: { label: string; value: number; min: number; step: number; onCommit: (value: number) => void }) {
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => setDraft(String(value)), [value]);
+  const commit = () => {
+    const parsed = Number(draft.replace(',', '.'));
+    const next = Number.isFinite(parsed) ? Math.max(min, parsed) : value;
+    setDraft(String(next));
+    if (next !== value) onCommit(next);
+  };
+  return (
+    <label className="flex items-center justify-between gap-3 text-sm text-gray-700">
+      {label}
+      <input
+        type="number"
+        min={min}
+        step={step}
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+        className={`${inputClass} w-24 text-right`}
+      />
+    </label>
   );
 }
