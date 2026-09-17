@@ -27,7 +27,15 @@ function collection<T extends { _id: string }>(name: string) {
   return {
     name,
     list: () => request<T[]>(url),
-    create: (record: NewRecord<T>) => request<T>(url, { method: 'POST', body: JSON.stringify(record) }),
+    // POST answers `{ id }` only, not the stored record, so the record is
+    // rebuilt from what was sent. Anything else the server returns wins.
+    create: async (record: NewRecord<T>): Promise<T> => {
+      const res = await request<Partial<T> & { id?: string }>(url, { method: 'POST', body: JSON.stringify(record) });
+      const { id, ...rest } = res;
+      const _id = rest._id ?? id;
+      if (!_id) throw new ApiError(500, `POST ${url} returned no id`);
+      return { ...record, ...rest, _id } as T;
+    },
     update: (record: T) => request<T>(`${url}/${record._id}`, { method: 'PUT', body: JSON.stringify(record) }),
     remove: (id: string) => request<unknown>(`${url}/${id}`, { method: 'DELETE' }).then(() => undefined),
   };

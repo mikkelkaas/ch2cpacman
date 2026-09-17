@@ -17,14 +17,20 @@ describe('cruttelut client', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('https://cruttelut.kaasfrich.dk/rest/ch2cpacman_teams');
   });
 
-  it('creates without sending an _id and returns the stored record', async () => {
-    const fetchMock = stubFetch(201, { _id: 'new', name: 'Prik 1', lat: 1, lng: 2, radiusM: 25, points: 1 });
+  it('creates without sending an _id and rebuilds the record around the returned id', async () => {
+    // cruttelut answers a bare `{ id }` on POST, not the stored document.
+    const fetchMock = stubFetch(201, { id: 'new' });
     const pellet = await api.pellets.create({ name: 'Prik 1', lat: 1, lng: 2, radiusM: 25, points: 1 });
-    expect(pellet._id).toBe('new');
+    expect(pellet).toEqual({ _id: 'new', name: 'Prik 1', lat: 1, lng: 2, radiusM: 25, points: 1 });
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('https://cruttelut.kaasfrich.dk/rest/ch2cpacman_pellets');
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body as string)).not.toHaveProperty('_id');
+  });
+
+  it('fails loudly when a create returns no id', async () => {
+    stubFetch(201, { message: 'success' });
+    await expect(api.teams.create({ name: 'x', code: 'ABCD', color: '#fff', createdAt: 'now', startedAt: null })).rejects.toBeInstanceOf(ApiError);
   });
 
   it('updates with the full object at the id url', async () => {

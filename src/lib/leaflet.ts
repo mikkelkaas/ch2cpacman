@@ -1,12 +1,17 @@
 import L from 'leaflet';
 import type { LatLng, Pellet } from './types';
 
-export const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-export const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+/**
+ * Plain OpenStreetMap tiles, darkened in CSS (see `.dark-tiles` in styles.css).
+ * The hosted dark basemaps (CARTO, Stadia) now need an API key and watermark
+ * the tiles without one; OSM's own tiles need nothing and go to zoom 19.
+ */
+export const OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+export const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 export function createDarkMap(container: HTMLElement, options: L.MapOptions = {}): L.Map {
   const map = L.map(container, { zoomControl: true, attributionControl: true, ...options });
-  L.tileLayer(DARK_TILES, { attribution: TILE_ATTRIBUTION, subdomains: 'abcd', maxZoom: 20 }).addTo(map);
+  L.tileLayer(OSM_TILES, { attribution: TILE_ATTRIBUTION, maxZoom: 19, className: 'dark-tiles' }).addTo(map);
   return map;
 }
 

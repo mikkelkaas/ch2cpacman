@@ -87,5 +87,11 @@ export default function AdminMap({ pellets, start, selectedId, mode, onMapClick,
     }
   }, [start, pellets.length]);
 
-  return <div ref={containerRef} className={`h-full w-full ${mode !== 'idle' ? 'cursor-crosshair' : ''}`} />;
+  // The cursor class lives on a wrapper: Leaflet adds its own classes to the
+  // map element, and a changing React className on that element would wipe them.
+  return (
+    <div className={`h-full w-full ${mode !== 'idle' ? 'cursor-crosshair' : ''}`}>
+      <div ref={containerRef} className="h-full w-full" />
+    </div>
+  );
 }

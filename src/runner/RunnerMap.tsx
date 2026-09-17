@@ -27,7 +27,8 @@ export default function RunnerMap({ pellets, eatenIds, start, fix, dimmed = fals
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    mapRef.current = createDarkMap(containerRef.current, { center: [56, 10], zoom: 6 });
+    // No zoom buttons: they sit where the countdown goes, and phones pinch.
+    mapRef.current = createDarkMap(containerRef.current, { center: [56, 10], zoom: 6, zoomControl: false });
     return () => {
       mapRef.current?.remove();
       mapRef.current = null;
