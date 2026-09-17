@@ -4,6 +4,7 @@ import { da } from '../i18n/da';
 import { api } from '../lib/api';
 import { FIRST_GAME_NAME, homeForOrphans, orphans } from '../lib/games';
 import type { Game, Pellet, Team } from '../lib/types';
+import HelpButton from './HelpDialog';
 import { Button, inputClass, Panel } from './ui';
 
 /**
@@ -116,9 +117,12 @@ export default function GamesPage() {
         <h1 className="text-lg font-semibold">
           Pac-Spejd <span className="text-gray-400 font-normal">{da.admin}</span>
         </h1>
-        <a href="#/" className="text-sm text-blue-700 hover:underline">
-          {da.runnerLink}
-        </a>
+        <div className="flex items-center gap-4">
+          <a href="#/" className="text-sm text-blue-700 hover:underline">
+            {da.runnerLink}
+          </a>
+          <HelpButton />
+        </div>
       </header>
       <div className="max-w-2xl mx-auto p-4 flex flex-col gap-4">
         {error && (

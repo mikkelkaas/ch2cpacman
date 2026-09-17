@@ -13,6 +13,7 @@ import PelletsPanel from './PelletsPanel';
 import Scoreboard from './Scoreboard';
 import SettingsPanel from './SettingsPanel';
 import TeamsPanel from './TeamsPanel';
+import HelpButton from './HelpDialog';
 import { Button } from './ui';
 
 const TEAM_COLORS = ['#dc2626', '#2563eb', '#16a34a', '#f59e0b', '#9333ea', '#0891b2', '#db2777', '#65a30d'];
@@ -199,6 +200,7 @@ export default function AdminApp({ gameId }: { gameId: string }) {
           <a href="#/" className="text-blue-700 hover:underline">
             {da.runnerLink}
           </a>
+          <HelpButton />
         </div>
       </header>
       {error && (
