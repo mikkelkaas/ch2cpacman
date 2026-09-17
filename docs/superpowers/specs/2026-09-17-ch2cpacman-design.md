@@ -21,6 +21,33 @@ Nothing is installed: runners use a web page, and the only server is
 | Language | Danish only, both screens. |
 | Hosting | GitHub Pages via an Actions workflow. Static bundle, no backend. |
 | Storage | cruttelut collections prefixed `ch2cpacman_`. |
+| Look | Arcade Pac-Man: black screens, neon yellow and blue, pixel font, chiptune sounds. |
+| Briefing | Every team reads a how-to-play screen before it can tap Start. |
+
+## Arcade theme
+
+The whole app looks like a 1980 cabinet, not like a map app with a logo.
+
+- Black background everywhere. Pac-Man yellow `#ffe600` for the player, score and
+  primary button; maze blue `#2121ff` for frames and borders; ghost colours (red,
+  pink, cyan, orange) for team swatches; pellet dots in pale peach `#ffb8ae`.
+- Font: "Press Start 2P" from Google Fonts for headings, numbers and buttons; a
+  plain sans for body text longer than a sentence, because the pixel font is
+  hard to read in paragraphs.
+- Map tiles: CARTO Dark Matter (no key, attribution required) so the map is
+  dark and the pellets glow. Pellets are round peach dots with a soft glow, size
+  by points, the point value beside them in the pixel font. Bigger values get a
+  "power pellet" pulse. The start is a small maze-blue square. The runner is a
+  Pac-Man sprite that faces the direction of travel, taken from the last two
+  fixes.
+- Arcade text moments: "READY!" flashes when Start is tapped, "GAME OVER" when
+  the countdown ends, and the score counts up digit by digit with a blip.
+- Sounds, small and generated with the Web Audio API so nothing is downloaded:
+  a chomp per pellet, a start jingle, a game-over descend. A speaker toggle in
+  the corner mutes them; muted state persists in localStorage.
+- The admin page uses the same palette and font for headings and the
+  scoreboard, which is styled as a HIGH SCORES table, but stays a practical
+  form-and-list page otherwise.
 
 ## Stack
 
@@ -102,19 +129,33 @@ Danish throughout. Phone portrait first.
    value as label; a bigger dot for more points. Start location marked. The
    runner's position is a pulsing dot with an accuracy ring. Map opens fitted to
    all pellets plus the start.
-3. **Start.** A large button over the map, plus the team name and "Du har
-   N minutter". Tapping it PUTs the team with `startedAt = now` and starts the
-   countdown. If the team already has `startedAt` (phone reload, second phone),
-   the countdown resumes from that value. If the phase has already ended the
-   screen goes straight to the result.
-4. **Løb.** Countdown at the top, score at the bottom. `watchPosition` with high
+3. **Sådan spiller I.** Shown full-screen after the code and before anything
+   else, every time the phone opens the game for a team that has not started.
+   Arcade title card with the team name, then the rules in short lines with a
+   pictogram each:
+   - "I har N minutter." (from settings)
+   - "Kortet viser prikker. Løb hen til dem."
+   - "Telefonen spiser prikken, når I er tæt nok på. I skal ikke trykke."
+   - "Jo længere væk, jo flere point."
+   - "Når tiden er gået, er spillet slut. Point tæller kun inden for tiden."
+   - "Hold skærmen tændt og telefonen i hånden."
+   A button "Videre" reveals the map with the pellets behind a translucent
+   overlay, so the team can plan its route while the rules are still fresh, and
+   the Start button below. The rules can be reopened from a "?" button later.
+4. **Start.** A large yellow "TRYK START" button, with "Klar? Tiden starter,
+   når I trykker". Tapping it PUTs the team with `startedAt = now`, flashes
+   "READY!", plays the start jingle and begins the countdown. If the team
+   already has `startedAt` (phone reload, second phone), the briefing is
+   skipped and the countdown resumes from that value. If the phase has already
+   ended the screen goes straight to the result.
+5. **Løb.** Countdown at the top, score at the bottom. `watchPosition` with high
    accuracy. On each fix, every uneaten pellet within `radiusM` of the fix is
    eaten: it disappears from this phone's map with a short pop animation and a
    chomp sound, the score ticks up, and a capture is POSTed. No accuracy
    threshold, on purpose: woodland GPS is poor and the admin sets radii.
    The page requests a screen wake lock where supported.
-5. **Slut.** When the countdown hits zero, capturing stops, the map dims, and a
-   card shows points and pellets eaten. Nothing else is possible; the admin
+6. **Slut.** When the countdown hits zero, capturing stops, the map dims,
+   "GAME OVER" drops in, and a card shows points and pellets eaten. Nothing else is possible; the admin
    resets the team if it must run again.
 
 Eaten pellets are known from the team's captures loaded at start plus the local
