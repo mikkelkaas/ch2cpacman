@@ -1,0 +1,50 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --color-pac: #ffe600;
+  --color-maze: #2121ff;
+  --color-pellet: #ffb8ae;
+  --color-ghost-red: #ff0000;
+  --color-ghost-pink: #ffb8ff;
+  --color-ghost-cyan: #00ffff;
+  --color-ghost-orange: #ffb852;
+  --font-arcade: "Press Start 2P", "Courier New", monospace;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html, body, #root { height: 100%; margin: 0; background: #000; }
+body { font-family: var(--font-body); -webkit-tap-highlight-color: transparent; }
+
+/* Arcade utilities */
+.glow-pac { text-shadow: 0 0 6px #ffe600, 0 0 14px rgba(255, 230, 0, 0.6); }
+.glow-maze { box-shadow: 0 0 0 3px #2121ff, 0 0 18px rgba(33, 33, 255, 0.8); }
+.blink { animation: blink 1s steps(2, start) infinite; }
+@keyframes blink { to { visibility: hidden; } }
+.drop-in { animation: drop-in 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+@keyframes drop-in { from { transform: translateY(-120%); opacity: 0; } to { transform: none; opacity: 1; } }
+.scanlines::after {
+  content: ""; pointer-events: none; position: absolute; inset: 0;
+  background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.04) 0 1px, transparent 1px 3px);
+}
+
+/* Map markers */
+.pellet-dot {
+  border-radius: 9999px; background: #ffb8ae;
+  box-shadow: 0 0 6px #ffb8ae, 0 0 14px rgba(255, 184, 174, 0.7);
+  display: flex; align-items: center; justify-content: center;
+}
+.pellet-dot.power { animation: power-pulse 1s ease-in-out infinite; }
+@keyframes power-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
+.pellet-dot.eaten { animation: eaten 0.3s ease-in both; }
+@keyframes eaten { to { transform: scale(0); opacity: 0; } }
+.pellet-label {
+  position: absolute; left: 100%; top: 50%; transform: translate(4px, -50%);
+  font-family: var(--font-arcade); font-size: 10px; color: #ffe600; text-shadow: 0 0 4px #000, 0 0 4px #000; white-space: nowrap;
+}
+.pacman { filter: drop-shadow(0 0 6px #ffe600); }
+.start-square { width: 14px; height: 14px; background: #2121ff; box-shadow: 0 0 8px #2121ff; }
+.leaflet-container { background: #000; font-family: var(--font-body); }
+.leaflet-control-attribution { background: rgba(0,0,0,0.6) !important; color: #888 !important; font-size: 9px; }
+.leaflet-control-attribution a { color: #aaa !important; }
+.leaflet-bar a { background: #000 !important; color: #ffe600 !important; border-color: #2121ff !important; }
