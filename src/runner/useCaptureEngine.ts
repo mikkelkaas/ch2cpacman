@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Fix } from '../hooks/useGeolocation';
 import { api } from '../lib/api';
 import { pelletsWithin } from '../lib/capture';
+import { isUsableFix } from '../lib/fix';
 import { drain, enqueue, pending } from '../lib/queue';
 import { sound } from '../lib/sound';
 import { dedupeCaptures, scoreTeam } from '../lib/score';
@@ -61,7 +62,7 @@ export function useCaptureEngine({ active, fix, pellets, team, settings, initial
   }, []);
 
   useEffect(() => {
-    if (!active || !fix) return;
+    if (!active || !fix || !isUsableFix(fix)) return;
     const hits = pelletsWithin(fix, pellets, eatenRef.current);
     if (hits.length === 0) return;
     const next = new Set(eatenRef.current);

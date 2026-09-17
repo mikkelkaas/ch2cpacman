@@ -10,6 +10,7 @@ import { da } from '../i18n/da';
 import { api } from '../lib/api';
 import { phaseState, remainingMs } from '../lib/phase';
 import { pending } from '../lib/queue';
+import { isUsableFix } from '../lib/fix';
 import { isFrightened } from '../lib/ghosts';
 import { dedupeCaptures } from '../lib/score';
 import { GHOST_WARN_M, withDefaults } from '../lib/settings';
@@ -31,7 +32,7 @@ interface GameData {
   events: GameEvent[];
 }
 
-export default function RunnerApp() {
+export default function RunnerApp({ joinCode = null }: { joinCode?: string | null }) {
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [teamId, setTeamId] = useState(() => storage.getTeamId());
@@ -51,6 +52,18 @@ export default function RunnerApp() {
   useEffect(() => {
     void loadTeams();
   }, [loadTeams]);
+
+  // A scanned QR carries the code in the address: join without typing, then
+  // drop it from the address so a later visit does not re-join.
+  useEffect(() => {
+    if (!joinCode || !teams) return;
+    const match = teams.find(t => t.code === joinCode);
+    if (match) {
+      storage.setTeamId(match._id);
+      setTeamId(match._id);
+    }
+    window.history.replaceState(null, '', `${window.location.pathname}#/`);
+  }, [joinCode, teams]);
 
   const team = teams?.find(t => t._id === teamId) ?? null;
   const gameId = team?.gameId ?? null;
@@ -276,6 +289,7 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
           danger={ghosts.nearest < GHOST_WARN_M}
           power={frightened}
           ghostBanner={ghosts.banner}
+          weakSignal={!!fix && !isUsableFix(fix)}
         />
       )}
 

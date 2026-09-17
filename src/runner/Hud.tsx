@@ -17,6 +17,8 @@ interface Props {
   /** Ghosts are frightened. */
   power?: boolean;
   ghostBanner?: GhostBanner | null;
+  /** The latest fix is too inaccurate to count. */
+  weakSignal?: boolean;
 }
 
 /** Score that counts up digit by digit, the arcade way. */
@@ -31,7 +33,7 @@ function useRollingNumber(target: number): number {
   return shown;
 }
 
-export default function Hud({ remainingMs, points, pendingCount, onShowRules, doubleMs = 0, danger = false, power = false, ghostBanner = null }: Props) {
+export default function Hud({ remainingMs, points, pendingCount, onShowRules, doubleMs = 0, danger = false, power = false, ghostBanner = null, weakSignal = false }: Props) {
   const shownPoints = useRollingNumber(points);
   const low = remainingMs > 0 && remainingMs < 60_000;
   const pendingSince = useRef<number | null>(null);
@@ -81,6 +83,7 @@ export default function Hud({ remainingMs, points, pendingCount, onShowRules, do
         </div>
       )}
       <div className="absolute bottom-0 inset-x-0 z-[450] flex flex-col items-center gap-1 p-3 pointer-events-none">
+        {weakSignal && <div className="font-arcade text-[9px] text-ghost-orange bg-black/80 px-2 py-1 blink">{da.weakSignal}</div>}
         {showWaiting && <div className="font-arcade text-[9px] text-ghost-orange bg-black/80 px-2 py-1">{da.waitingForNetwork}</div>}
         <div className="bg-black/80 border-2 border-maze px-4 py-2 text-center">
           <div className="font-arcade text-[9px] text-pellet">{da.score}</div>

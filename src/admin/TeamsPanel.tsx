@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { da, formatClock } from '../i18n/da';
 import { phaseEndMs, phaseState } from '../lib/phase';
 import type { Team } from '../lib/types';
+import QrDialog from './QrDialog';
 import { Button, inputClass, Panel } from './ui';
 
 interface Props {
@@ -31,6 +32,8 @@ export function parseTeamNames(text: string): string[] {
 export default function TeamsPanel({ teams, phaseMinutes, now, onAdd, onReset, onDelete }: Props) {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [qrTeamId, setQrTeamId] = useState<string | null>(null);
+  const sorted = [...teams].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const names = parseTeamNames(text);
 
   const submit = async (e: FormEvent) => {
@@ -83,9 +86,7 @@ export default function TeamsPanel({ teams, phaseMinutes, now, onAdd, onReset, o
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {[...teams]
-              .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-              .map(team => (
+            {sorted.map(team => (
                 <tr key={team._id}>
                   <td className="py-2 pr-2">
                     <div className="flex items-center gap-2">
@@ -96,6 +97,9 @@ export default function TeamsPanel({ teams, phaseMinutes, now, onAdd, onReset, o
                   </td>
                   <td className="py-2 pr-2 font-mono text-lg tracking-widest text-gray-900">{team.code}</td>
                   <td className="py-2 text-right whitespace-nowrap">
+                    <button onClick={() => setQrTeamId(team._id)} className="text-blue-700 hover:underline text-xs mr-3">
+                      {da.showQr}
+                    </button>
                     <button onClick={() => confirm(da.confirmReset(team.name)) && void onReset(team)} className="text-amber-700 hover:underline text-xs disabled:text-gray-300 disabled:no-underline mr-3" disabled={!team.startedAt}>
                       {da.reset}
                     </button>
@@ -104,10 +108,11 @@ export default function TeamsPanel({ teams, phaseMinutes, now, onAdd, onReset, o
                     </button>
                   </td>
                 </tr>
-              ))}
+            ))}
           </tbody>
         </table>
       )}
+      {qrTeamId && <QrDialog teams={sorted} initialId={qrTeamId} onClose={() => setQrTeamId(null)} />}
     </Panel>
   );
 }

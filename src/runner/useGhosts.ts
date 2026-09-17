@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Fix } from '../hooks/useGeolocation';
 import { api } from '../lib/api';
+import { isUsableFix } from '../lib/fix';
 import { haversineM } from '../lib/geo';
 import { frighten, initialGhosts, isFrightened, stepGhosts } from '../lib/ghosts';
 import type { GhostState } from '../lib/ghosts';
@@ -49,7 +50,7 @@ export function useGhosts({ active, fix, pellets, team, settings, initialEvents 
 
   // Spawn once the phase is running and a fix exists.
   useEffect(() => {
-    if (!active || !fix || stateRef.current || settings.ghostCount === 0) return;
+    if (!active || !fix || !isUsableFix(fix) || stateRef.current || settings.ghostCount === 0) return;
     const initial = initialGhosts(settings, fix, pellets);
     stateRef.current = initial;
     setState(initial);
@@ -60,7 +61,8 @@ export function useGhosts({ active, fix, pellets, team, settings, initialEvents 
     const id = window.setInterval(() => {
       const current = stateRef.current;
       const runner = fixRef.current;
-      if (!current || !runner) return;
+      // A poor fix freezes the chase rather than letting a GPS jump decide it.
+      if (!current || !runner || !isUsableFix(runner)) return;
       const nowMs = Date.now();
       const { state: next, events } = stepGhosts(current, { settings, runner, pellets, startedAt: team.startedAt!, nowMs, dtS: TICK_MS / 1000 });
       stateRef.current = next;

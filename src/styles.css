@@ -83,3 +83,8 @@ body { font-family: var(--font-body); -webkit-tap-highlight-color: transparent; 
 .plain-pellet.selected.kind-power, .plain-pellet.selected.kind-double { background: #f59e0b; }
 .leaflet-marker-draggable .plain-pellet:active { cursor: grabbing; }
 .plain-start { width: 18px; height: 18px; background: #16a34a; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+
+@media print {
+  @page { margin: 12mm; }
+  body { background: #fff; }
+}

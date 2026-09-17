@@ -32,7 +32,10 @@ built: `ROADMAP.md`.
    5 m, use more under dense trees.
 4. **Hold**: paste the team names, one per line, and *Tilføj*. The 4-character
    code next to each team is what the patrol types on the phone. Codes never
-   contain 0, O, 1 or I.
+   contain 0, O, 1 or I. *Vis QR* opens a full-screen QR code for that team,
+   with next and previous, so a leader can hold up a phone to a queue of
+   patrols; scanning it joins the team without typing. *Print* in the header
+   opens a sheet with one card per team and a station overview of all codes.
 5. Hand a patrol a phone with the runner page open. They type the code, read the
    rules, tap *Videre*, plan on the map, tap *TRYK START*. The countdown starts
    the moment they tap. The phone eats pellets automatically when inside a
@@ -41,6 +44,9 @@ built: `ROADMAP.md`.
    see which pellets a team ate.
 7. If a team needs to run again, *Nulstil* clears its start time and deletes its
    captures. *Slet* removes the team entirely.
+
+Fixes worse than 30 m are shown but not trusted: no pellet is eaten and no
+ghost catches on them, and the HUD says "SVAGT GPS-SIGNAL".
 
 Phones need location permission and should keep the screen on. The page requests
 a wake lock where the browser supports it. Captures made without signal are

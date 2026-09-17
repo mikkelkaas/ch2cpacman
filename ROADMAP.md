@@ -6,7 +6,8 @@ list is a menu. Effort is a rough size for one person who knows the code:
 
 Built so far, for reference: per-team timed runs, GPS pellets with points and
 radius, power pellets, Dobbelt, virtual ghosts, several games, five map
-themes, an admin with standings, and an in-app guide. See `README.md`.
+themes, an admin with standings, an in-app guide, a GPS accuracy guard, QR
+join codes on a phone and a printable team sheet. See `README.md`.
 
 ## Recommended next
 
@@ -15,15 +16,12 @@ leaders.
 
 | Idea | Effort | Why first |
 | --- | --- | --- |
-| GPS accuracy guard | S | Ignore fixes worse than ~30 m for captures and catches, show a "svagt signal" hint. Fewer unfair ghost catches and less jitter scoring. |
 | Ghost personalities | S | Blinky chases directly, Pinky aims ahead of the runner's heading, Inky wanders between dots, Clyde retreats when close. Cheap on top of the existing simulation, and the ghosts stop feeling like one homing missile. |
 | Big scoreboard view | S–M | `#/board/<gameId>` in the arcade style for a laptop or TV at the station: HIGH SCORES, the running team's live countdown and score, "READY PLAYER ONE" when a team is about to start. |
 | Practice mode | S | A "prøvetur" code that lets a team walk to one dot with nothing counted, so phone and permissions are proven before the real run. |
 
 ## Before the event, on the day
 
-- **Print sheet** (S). One page per team with name, code and a QR code to the
-  runner page, plus a station sheet with every code.
 - **Rename game** (S). Games can be created and deleted but not renamed.
 - **Duplicate game** (S). Copy dots and settings into a new game for a second
   round or another site.

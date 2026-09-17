@@ -42,6 +42,7 @@ export const da = {
   pelletsEaten: (n: number) => (n === 1 ? '1 prik spist' : `${n} prikker spist`),
   points: (n: number) => (n === 1 ? '1 point' : `${n} point`),
   waitingForNetwork: 'venter på netværk…',
+  weakSignal: 'SVAGT GPS-SIGNAL',
   yourTeam: 'HOLD',
   locationDenied: 'Vi skal bruge din placering',
   locationDeniedHint: 'Giv siden lov til at bruge placering i browserens indstillinger, og indlæs siden igen.',
@@ -123,6 +124,18 @@ export const da = {
   noScores: 'Ingen hold har spillet endnu.',
   refreshed: (time: string) => `Opdateret ${time}`,
   runnerLink: 'Løberside',
+  showQr: 'Vis QR',
+  qrTitle: 'Scan for at deltage',
+  qrOrType: (url: string) => `eller åbn ${url} og tast koden`,
+  nextTeam: 'Næste hold',
+  prevTeam: 'Forrige hold',
+  print: 'Print',
+  printTitle: 'Holdkort',
+  printHint: 'Klip kortene ud, ét pr. hold. Sidste side er postens oversigt.',
+  stationSheet: 'Postens oversigt',
+  printCardHint: 'Scan koden eller åbn siden og tast holdkoden.',
+  printNow: 'Udskriv',
+  backToGame: 'Tilbage til spillet',
 } as const;
 
 export function formatClock(iso: string | number): string {
