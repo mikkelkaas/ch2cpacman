@@ -93,7 +93,7 @@ export default function RunnerMap({ pellets, eatenIds, start, fix, dimmed = fals
 
   return (
     <div className="relative h-full w-full">
-      <div ref={containerRef} className="h-full w-full" />
+      <div ref={containerRef} className="h-full w-full arcade-map" />
       {dimmed && <div className="absolute inset-0 bg-black/70 z-[400] pointer-events-none" />}
     </div>
   );

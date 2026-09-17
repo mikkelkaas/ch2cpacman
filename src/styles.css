@@ -44,9 +44,21 @@ body { font-family: var(--font-body); -webkit-tap-highlight-color: transparent; 
 }
 .pacman { filter: drop-shadow(0 0 6px #ffe600); }
 .start-square { width: 14px; height: 14px; background: #2121ff; box-shadow: 0 0 8px #2121ff; }
-.leaflet-container { background: #000; font-family: var(--font-body); }
-/* Invert OSM into a night map: light backgrounds go near-black, roads stay readable. */
+.leaflet-container { font-family: var(--font-body); }
+/* Runner map only. Invert OSM into a night map: light backgrounds go near-black, roads stay readable. */
+.arcade-map.leaflet-container { background: #000; }
 .dark-tiles { filter: invert(1) hue-rotate(180deg) brightness(0.65) contrast(1.15) saturate(0.6); }
-.leaflet-control-attribution { background: rgba(0,0,0,0.6) !important; color: #888 !important; font-size: 9px; }
-.leaflet-control-attribution a { color: #aaa !important; }
-.leaflet-bar a { background: #000 !important; color: #ffe600 !important; border-color: #2121ff !important; }
+.arcade-map .leaflet-control-attribution { background: rgba(0,0,0,0.6) !important; color: #888 !important; font-size: 9px; }
+.arcade-map .leaflet-control-attribution a { color: #aaa !important; }
+.arcade-map .leaflet-bar a { background: #000 !important; color: #ffe600 !important; border-color: #2121ff !important; }
+
+/* Admin map markers: plain. */
+.plain-pellet {
+  width: 28px; height: 28px; border-radius: 9999px; background: #2563eb; color: #fff;
+  border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center; font: 600 13px/1 var(--font-body);
+  cursor: grab;
+}
+.plain-pellet.selected { background: #f59e0b; color: #000; }
+.leaflet-marker-draggable .plain-pellet:active { cursor: grabbing; }
+.plain-start { width: 18px; height: 18px; background: #16a34a; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }

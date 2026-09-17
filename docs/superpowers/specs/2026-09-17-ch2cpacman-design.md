@@ -21,7 +21,7 @@ Nothing is installed: runners use a web page, and the only server is
 | Language | Danish only, both screens. |
 | Hosting | GitHub Pages via an Actions workflow. Static bundle, no backend. |
 | Storage | cruttelut collections prefixed `ch2cpacman_`. |
-| Look | Arcade Pac-Man: black screens, neon yellow and blue, pixel font, chiptune sounds. |
+| Look | Arcade Pac-Man for the runner only: black screens, neon yellow and blue, pixel font, chiptune sounds. The admin page is plain and unthemed. |
 | Briefing | Every team reads a how-to-play screen before it can tap Start. |
 
 ## Arcade theme
@@ -45,9 +45,8 @@ The whole app looks like a 1980 cabinet, not like a map app with a logo.
 - Sounds, small and generated with the Web Audio API so nothing is downloaded:
   a chomp per pellet, a start jingle, a game-over descend. A speaker toggle in
   the corner mutes them; muted state persists in localStorage.
-- The admin page uses the same palette and font for headings and the
-  scoreboard, which is styled as a HIGH SCORES table, but stays a practical
-  form-and-list page otherwise.
+- The admin page has none of this: light background, system font, an ordinary
+  OpenStreetMap map, plain blue markers. Changed 2026-09-17 at the user's request.
 
 ## Stack
 
@@ -90,7 +89,7 @@ reset sets it back to null.
   "radiusM": 25, "points": 3 }
 ```
 
-Points are whole numbers ≥ 1. Radius default 25 m. Deleting a pellet does not
+Points are whole numbers ≥ 1. Radius default 15 m. Deleting a pellet does not
 delete captures of it; scoring ignores captures whose pellet no longer exists.
 
 ### `ch2cpacman_captures` — append only
@@ -176,17 +175,20 @@ Danish.
 
 - **Indstillinger.** Phase length in minutes. "Sæt startpunkt" arms the map; the
   next click places the start marker. Saved on change.
-- **Pellets.** "Tilføj pellet" arms the map; the next click adds one with a
-  default name, radius 25 m and 1 point, and selects it. The list shows name,
-  points, radius and distance from the start in metres, sorted by distance, so
-  the admin can grade points from near to far. Inline edit, delete with confirm.
-- **Hold.** Name input plus "Tilføj". Each row: colour swatch, name, code in a
+- **Pellets.** A click on the map adds one with a default name, radius 15 m and
+  1 point, and selects it. Dragging a pellet moves it and saves the new position
+  on drop; dragging the map pans. The list shows name, points, radius and
+  distance from the start in metres, sorted by distance, so the admin can grade
+  points from near to far. Inline edit, delete with confirm.
+- **Hold.** A textarea with one team name per line plus "Tilføj N hold"; blank
+  and duplicate lines are dropped. Each row: colour swatch, name, code in a
   large monospace font, state: "Ikke startet", "I gang, slutter kl. HH:MM" or
   "Færdig". "Nulstil" clears `startedAt` and deletes the team's captures after a
   confirm. Delete team likewise.
 - **Stilling.** Teams ranked by points, then by earliest last capture. Columns:
   place, team, points, pellets. Refreshed every 10 s by refetching captures and
-  teams. Expanding a row lists what the team ate.
+  teams. Expanding a row lists what the team ate. Only "Sæt startpunkt" arms the
+  map; everything else is direct.
 
 The admin page loads all four collections once, then polls captures and teams.
 Writes go straight to cruttelut and update local state on success.

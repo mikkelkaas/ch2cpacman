@@ -20,17 +20,18 @@ Design: `docs/superpowers/specs/2026-09-17-ch2cpacman-design.md`.
 1. Open the admin page on a laptop.
 2. **Indstillinger**: set minutes per team (default 10). Click *Sæt startpunkt*,
    then click the map where the teams start.
-3. **Prikker**: click *Tilføj prik*, then click the map. Repeat. The list is
-   sorted by distance from the start, so give the far ones more points. Radius is
-   how close the phone has to be, in metres; 25 m is a sensible default for
-   woodland GPS, more under dense trees.
-4. **Hold**: type a team name and *Tilføj*. The 4-character code next to the team
-   is what the patrol types on the phone. Codes never contain 0, O, 1 or I.
+3. **Prikker**: click the map to add a dot. Drag a dot to move it; drag the map to
+   pan. The list is sorted by distance from the start, so give the far ones more
+   points. Radius is how close the phone has to be, in metres; the default is
+   15 m, use more under dense trees.
+4. **Hold**: paste the team names, one per line, and *Tilføj*. The 4-character
+   code next to each team is what the patrol types on the phone. Codes never
+   contain 0, O, 1 or I.
 5. Hand a patrol a phone with the runner page open. They type the code, read the
    rules, tap *Videre*, plan on the map, tap *TRYK START*. The countdown starts
    the moment they tap. The phone eats pellets automatically when inside a
    pellet's radius; nobody taps anything.
-6. **High scores** on the admin page refreshes every 10 seconds. Click a row to
+6. **Stilling** on the admin page refreshes every 10 seconds. Click a row to
    see which pellets a team ate.
 7. If a team needs to run again, *Nulstil* clears its start time and deletes its
    captures. *Slet* removes the team entirely.
@@ -81,8 +82,9 @@ pnpm build        # dist/
 
 Pushing to `main` runs `.github/workflows/pages.yml`: lint, test, build, deploy.
 
-Map tiles are plain OpenStreetMap, inverted to a night look in CSS
-(`.dark-tiles`). The hosted dark basemaps now require API keys.
+The runner's map tiles are plain OpenStreetMap inverted to a night look in CSS
+(`.dark-tiles`); the hosted dark basemaps now require API keys. The admin page is
+deliberately unthemed: the arcade look is for players only.
 
 ## Manual checklist before the event (real phone, HTTPS)
 

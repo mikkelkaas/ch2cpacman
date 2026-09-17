@@ -9,9 +9,17 @@ import type { LatLng, Pellet } from './types';
 export const OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 export const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
+/** Runner map: OSM inverted to a night look. Callers give the container the `arcade-map` class. */
 export function createDarkMap(container: HTMLElement, options: L.MapOptions = {}): L.Map {
   const map = L.map(container, { zoomControl: true, attributionControl: true, ...options });
   L.tileLayer(OSM_TILES, { attribution: TILE_ATTRIBUTION, maxZoom: 19, className: 'dark-tiles' }).addTo(map);
+  return map;
+}
+
+/** Admin map: ordinary OSM, no theme. */
+export function createPlainMap(container: HTMLElement, options: L.MapOptions = {}): L.Map {
+  const map = L.map(container, { zoomControl: true, attributionControl: true, ...options });
+  L.tileLayer(OSM_TILES, { attribution: TILE_ATTRIBUTION, maxZoom: 19 }).addTo(map);
   return map;
 }
 
@@ -31,6 +39,21 @@ export function pelletIcon(pellet: Pellet, extraClass = ''): L.DivIcon {
     iconAnchor: [size / 2, size / 2],
     html: `<div class="pellet-dot ${power} ${extraClass}" style="width:${size}px;height:${size}px"><span class="pellet-label">${pellet.points}</span></div>`,
   });
+}
+
+/** Admin pellet: a plain blue disc with the point value, no glow. */
+export function plainPelletIcon(pellet: Pellet, selected: boolean): L.DivIcon {
+  const size = 28;
+  return L.divIcon({
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    html: `<div class="plain-pellet ${selected ? 'selected' : ''}">${pellet.points}</div>`,
+  });
+}
+
+export function plainStartIcon(): L.DivIcon {
+  return L.divIcon({ className: '', iconSize: [18, 18], iconAnchor: [9, 9], html: '<div class="plain-start" title="Start"></div>' });
 }
 
 export function startIcon(): L.DivIcon {

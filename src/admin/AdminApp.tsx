@@ -1,7 +1,4 @@
 import { useCallback, useMemo, useState } from 'react';
-import ArcadeTitle from '../components/ArcadeTitle';
-import ErrorBar from '../components/ErrorBar';
-import FullScreenMessage from '../components/FullScreenMessage';
 import { useNow } from '../hooks/useNow';
 import { usePolling } from '../hooks/usePolling';
 import { da, formatClock } from '../i18n/da';
@@ -15,9 +12,11 @@ import PelletsPanel from './PelletsPanel';
 import Scoreboard from './Scoreboard';
 import SettingsPanel from './SettingsPanel';
 import TeamsPanel from './TeamsPanel';
+import { Button } from './ui';
 
-const GHOST_COLORS = ['#ff0000', '#ffb8ff', '#00ffff', '#ffb852', '#ffe600', '#2121ff', '#ffb8ae', '#00ff00'];
+const TEAM_COLORS = ['#dc2626', '#2563eb', '#16a34a', '#f59e0b', '#9333ea', '#0891b2', '#db2777', '#65a30d'];
 const POLL_MS = 10_000;
+export const DEFAULT_RADIUS_M = 15;
 
 export default function AdminApp() {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -65,14 +64,13 @@ export default function AdminApp() {
     if (mode === 'setStart') {
       setMode('idle');
       void saveSettings({ ...settings, start: latlng });
-    } else if (mode === 'addPellet') {
-      setMode('idle');
-      void write(async () => {
-        const created = await api.pellets.create({ name: `Prik ${pellets.length + 1}`, lat: latlng.lat, lng: latlng.lng, radiusM: 25, points: 1 });
-        setPellets(list => [...(list ?? []), created]);
-        setSelectedId(created._id);
-      });
+      return;
     }
+    void write(async () => {
+      const created = await api.pellets.create({ name: `Prik ${pellets.length + 1}`, lat: latlng.lat, lng: latlng.lng, radiusM: DEFAULT_RADIUS_M, points: 1 });
+      setPellets(list => [...(list ?? []), created]);
+      setSelectedId(created._id);
+    });
   };
 
   const savePellet = (pellet: Pellet) =>
@@ -81,6 +79,11 @@ export default function AdminApp() {
       setPellets(list => (list ?? []).map(p => (p._id === saved._id ? saved : p)));
     });
 
+  const movePellet = (id: string, latlng: LatLng) => {
+    const pellet = pellets?.find(p => p._id === id);
+    if (pellet) void savePellet({ ...pellet, lat: latlng.lat, lng: latlng.lng });
+  };
+
   const deletePellet = (pellet: Pellet) =>
     write(async () => {
       await api.pellets.remove(pellet._id);
@@ -88,16 +91,24 @@ export default function AdminApp() {
       setSelectedId(id => (id === pellet._id ? null : id));
     });
 
-  const addTeam = (name: string) =>
+  const addTeams = (names: string[]) =>
     write(async () => {
-      const created = await api.teams.create({
-        name,
-        code: generateTeamCode(teams.map(t => t.code)),
-        color: GHOST_COLORS[teams.length % GHOST_COLORS.length],
-        createdAt: new Date().toISOString(),
-        startedAt: null,
-      });
-      setTeams(list => [...list, created]);
+      const codes = new Set(teams.map(t => t.code));
+      const created: Team[] = [];
+      for (const [i, name] of names.entries()) {
+        const code = generateTeamCode(codes);
+        codes.add(code);
+        created.push(
+          await api.teams.create({
+            name,
+            code,
+            color: TEAM_COLORS[(teams.length + i) % TEAM_COLORS.length],
+            createdAt: new Date().toISOString(),
+            startedAt: null,
+          }),
+        );
+      }
+      setTeams(list => [...list, ...created]);
     });
 
   const deleteTeamCaptures = async (team: Team) => {
@@ -125,44 +136,64 @@ export default function AdminApp() {
     [teams, captures, pellets, settings],
   );
 
+  const shell = (children: React.ReactNode) => <div className="min-h-full bg-gray-100 text-gray-900 font-body">{children}</div>;
+
   if (!settings || !pellets) {
-    return staticPoll.error ? (
-      <div className="min-h-full flex flex-col">
-        <ErrorBar message={da.fetchFailed} onRetry={staticPoll.reload} />
-        <FullScreenMessage title={da.admin} />
-      </div>
-    ) : (
-      <FullScreenMessage title={da.loading} />
+    return shell(
+      <div className="p-8 text-center text-gray-600">
+        {staticPoll.error ? (
+          <>
+            <p className="text-red-700 mb-3">{da.fetchFailed}</p>
+            <Button onClick={staticPoll.reload}>{da.retry}</Button>
+          </>
+        ) : (
+          <p>{da.loading}</p>
+        )}
+      </div>,
     );
   }
 
   const error = writeError ? da.saveFailed : livePoll.error || staticPoll.error ? da.fetchFailed : null;
 
-  return (
+  return shell(
     <div className="min-h-full flex flex-col">
-      <header className="flex items-center justify-between gap-4 px-4 py-3 border-b-4 border-maze">
-        <ArcadeTitle size="sm">
-          {da.title} <span className="text-pellet">{da.admin}</span>
-        </ArcadeTitle>
-        <div className="flex items-center gap-4 text-xs text-gray-400">
+      <header className="flex items-center justify-between gap-4 px-4 py-3 bg-white border-b border-gray-200">
+        <h1 className="text-lg font-semibold">
+          Pac-Spejd <span className="text-gray-400 font-normal">{da.admin}</span>
+        </h1>
+        <div className="flex items-center gap-4 text-sm text-gray-500">
           {livePoll.lastLoadedAt && <span>{da.refreshed(formatClock(livePoll.lastLoadedAt))}</span>}
-          <a href="#/" className="underline text-pac">
+          <a href="#/" className="text-blue-700 hover:underline">
             {da.runnerLink}
           </a>
         </div>
       </header>
-      {error && <ErrorBar message={error} onRetry={() => { setWriteError(null); void staticPoll.reload(); void livePoll.reload(); }} />}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_440px]">
-        <div className="h-[50vh] lg:h-[calc(100vh-4rem)] lg:sticky lg:top-0 border-b-4 lg:border-b-0 lg:border-r-4 border-maze">
-          <AdminMap pellets={pellets} start={settings.start} selectedId={selectedId} mode={mode} onMapClick={onMapClick} onSelect={setSelectedId} />
+      {error && (
+        <div role="alert" className="flex items-center justify-between gap-3 bg-red-100 text-red-800 px-4 py-2 text-sm border-b border-red-200">
+          <span>{error}</span>
+          <button
+            className="underline"
+            onClick={() => {
+              setWriteError(null);
+              void staticPoll.reload();
+              void livePoll.reload();
+            }}
+          >
+            {da.retry}
+          </button>
+        </div>
+      )}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_460px]">
+        <div className="h-[50vh] lg:h-[calc(100vh-3.5rem)] lg:sticky lg:top-0 border-b lg:border-b-0 lg:border-r border-gray-200">
+          <AdminMap pellets={pellets} start={settings.start} selectedId={selectedId} mode={mode} onMapClick={onMapClick} onSelect={setSelectedId} onMovePellet={movePellet} />
         </div>
         <div className="flex flex-col gap-4 p-4">
           <Scoreboard scores={scores} />
-          <TeamsPanel teams={teams} phaseMinutes={settings.phaseMinutes} now={now} onAdd={addTeam} onReset={resetTeam} onDelete={deleteTeam} />
+          <TeamsPanel teams={teams} phaseMinutes={settings.phaseMinutes} now={now} onAdd={addTeams} onReset={resetTeam} onDelete={deleteTeam} />
           <SettingsPanel settings={settings} mode={mode} onSave={saveSettings} onSetMode={setMode} />
-          <PelletsPanel pellets={pellets} start={settings.start} selectedId={selectedId} mode={mode} onSelect={setSelectedId} onSetMode={setMode} onSave={savePellet} onDelete={deletePellet} />
+          <PelletsPanel pellets={pellets} start={settings.start} selectedId={selectedId} onSelect={setSelectedId} onSave={savePellet} onDelete={deletePellet} />
         </div>
       </div>
-    </div>
+    </div>,
   );
 }
