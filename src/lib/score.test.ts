@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { dedupeCaptures, rankTeams, scoreTeam } from './score';
 import type { Capture, Pellet, Team } from './types';
+// Dobbelt and ghost event tests below reuse these fixtures.
 
 const startedAt = '2026-09-20T10:00:00.000Z';
 const t0 = Date.parse(startedAt);
@@ -58,5 +59,26 @@ describe('rankTeams', () => {
     expect(ranked.map(r => r.team._id)).toEqual(['t2', 't1']);
     const ranked2 = rankTeams([team, other], [...captures, cap('t1', 'p1', 6 * 60_000)], pellets, settings);
     expect(ranked2.map(r => r.team._id)).toEqual(['t1', 't2']);
+  });
+});
+
+describe('score with Dobbelt and ghost events', () => {
+  const dbl: Pellet = { _id: 'd', name: 'Dobbelt', lat: 0, lng: 0, radiusM: 5, points: 1, kind: 'double' };
+  const all = [...pellets, dbl];
+  const ev = (type: 'ghost_caught' | 'ghost_eaten', points: number, offsetMs: number) => ({ _id: `e${offsetMs}`, teamId: 't1', type, at: iso(offsetMs), points, clientId: `e${offsetMs}` });
+
+  it('doubles pellets eaten within the window after a Dobbelt, not the Dobbelt itself', () => {
+    const s = scoreTeam(team, [cap('t1', 'd', 60_000), cap('t1', 'p1', 90_000), cap('t1', 'p2', 60_000 + 61_000)], all, { ...settings, doubleSeconds: 60 }, []);
+    // Dobbelt 1 + p1 doubled 2 + p2 outside the window 5
+    expect(s.points).toBe(8);
+  });
+
+  it('applies ghost events inside the window and floors the score at zero', () => {
+    const s = scoreTeam(team, [cap('t1', 'p1', 60_000)], all, settings, [ev('ghost_caught', -2, 70_000), ev('ghost_eaten', 3, 80_000), ev('ghost_caught', -2, 20 * 60_000)]);
+    expect(s.points).toBe(2);
+    expect(s.caught).toBe(1);
+    expect(s.ghostsEaten).toBe(1);
+    const floored = scoreTeam(team, [], all, settings, [ev('ghost_caught', -2, 70_000)]);
+    expect(floored.points).toBe(0);
   });
 });

@@ -1,54 +1,59 @@
-import type { Capture, NewRecord } from './types';
+import type { Capture, GameEvent, NewRecord } from './types';
 
 export type QueuedCapture = NewRecord<Capture>;
-
-const KEY = 'ch2cpacman.captureQueue';
-
-function read(): QueuedCapture[] {
-  try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as QueuedCapture[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function write(queue: QueuedCapture[]): void {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(queue));
-  } catch {
-    // Storage full or blocked: the in-memory attempt below still runs.
-  }
-}
-
-/** Captures waiting to be uploaded, oldest first. */
-export function pending(): QueuedCapture[] {
-  return read();
-}
-
-export function enqueue(capture: QueuedCapture): void {
-  const queue = read();
-  if (queue.some(c => c.clientId === capture.clientId)) return;
-  queue.push(capture);
-  write(queue);
-}
+export type QueuedEvent = NewRecord<GameEvent>;
 
 /**
- * Upload in order and stop at the first failure, so a dead spot leaves the
- * queue intact and ordered for the next attempt.
+ * A localStorage upload queue for append-only records identified by
+ * `clientId`. Upload happens in order and stops at the first failure, so a
+ * dead spot leaves the queue intact and ordered for the next attempt.
  */
-export async function drain(post: (capture: QueuedCapture) => Promise<unknown>): Promise<{ sent: number; left: number }> {
-  let queue = read();
-  let sent = 0;
-  for (const capture of [...queue]) {
+export function createQueue<T extends { clientId: string }>(key: string) {
+  const read = (): T[] => {
     try {
-      await post(capture);
+      const raw = localStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as T[]) : [];
     } catch {
-      break;
+      return [];
     }
-    sent += 1;
-    queue = queue.filter(c => c.clientId !== capture.clientId);
-    write(queue);
-  }
-  return { sent, left: queue.length };
+  };
+  const write = (queue: T[]): void => {
+    try {
+      localStorage.setItem(key, JSON.stringify(queue));
+    } catch {
+      // Storage full or blocked: the in-memory attempt below still runs.
+    }
+  };
+  return {
+    /** Records waiting to be uploaded, oldest first. */
+    pending: (): T[] => read(),
+    enqueue(record: T): void {
+      const queue = read();
+      if (queue.some(r => r.clientId === record.clientId)) return;
+      queue.push(record);
+      write(queue);
+    },
+    async drain(post: (record: T) => Promise<unknown>): Promise<{ sent: number; left: number }> {
+      let queue = read();
+      let sent = 0;
+      for (const record of [...queue]) {
+        try {
+          await post(record);
+        } catch {
+          break;
+        }
+        sent += 1;
+        queue = queue.filter(r => r.clientId !== record.clientId);
+        write(queue);
+      }
+      return { sent, left: queue.length };
+    },
+  };
 }
+
+export const captureQueue = createQueue<QueuedCapture>('ch2cpacman.captureQueue');
+export const eventQueue = createQueue<QueuedEvent>('ch2cpacman.eventQueue');
+
+export const pending = captureQueue.pending;
+export const enqueue = captureQueue.enqueue;
+export const drain = captureQueue.drain;

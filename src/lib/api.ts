@@ -1,6 +1,8 @@
-import type { Capture, NewRecord, Pellet, Settings, Team } from './types';
+import type { Capture, GameEvent, NewRecord, Pellet, Settings, Team } from './types';
 
 export const BASE = 'https://cruttelut.kaasfrich.dk/rest';
+/** Collection prefix; a test build can point at throwaway collections. */
+export const PREFIX: string = import.meta.env.VITE_COLLECTION_PREFIX || 'ch2cpacman_';
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -42,8 +44,9 @@ function collection<T extends { _id: string }>(name: string) {
 }
 
 export const api = {
-  settings: collection<Settings>('ch2cpacman_settings'),
-  teams: collection<Team>('ch2cpacman_teams'),
-  pellets: collection<Pellet>('ch2cpacman_pellets'),
-  captures: collection<Capture>('ch2cpacman_captures'),
+  settings: collection<Settings>(`${PREFIX}settings`),
+  teams: collection<Team>(`${PREFIX}teams`),
+  pellets: collection<Pellet>(`${PREFIX}pellets`),
+  captures: collection<Capture>(`${PREFIX}captures`),
+  events: collection<GameEvent>(`${PREFIX}events`),
 };
