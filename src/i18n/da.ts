@@ -1,5 +1,5 @@
 export const da = {
-  title: 'PAC-SPEJD',
+  title: 'PAC-LIVE',
   loading: 'HENTER…',
   fetchFailed: 'Kunne ikke hente data',
   saveFailed: 'Kunne ikke gemme',

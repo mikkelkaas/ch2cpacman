@@ -1,4 +1,4 @@
-# PAC-SPEJD (ch2cpacman)
+# PAC-LIVE (ch2cpacman)
 
 An arcade Pac-Man style GPS race for one scout event. Patrols arrive at a station
 one at a time across the day. Each gets a phone with a dark map full of glowing

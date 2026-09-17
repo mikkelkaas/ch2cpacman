@@ -115,7 +115,7 @@ export default function GamesPage() {
     <div className="min-h-full bg-gray-100 text-gray-900 font-body">
       <header className="flex items-center justify-between gap-4 px-4 py-3 bg-white border-b border-gray-200">
         <h1 className="text-lg font-semibold">
-          Pac-Spejd <span className="text-gray-400 font-normal">{da.admin}</span>
+          Pac-Live <span className="text-gray-400 font-normal">{da.admin}</span>
         </h1>
         <div className="flex items-center gap-4">
           <a href="#/" className="text-sm text-blue-700 hover:underline">
