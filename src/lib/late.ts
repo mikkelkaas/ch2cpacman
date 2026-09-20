@@ -2,11 +2,10 @@ import { haversineM } from './geo';
 import { phaseEndMs } from './phase';
 import type { LatLng } from './types';
 
-/** Every whole block of this length past the end costs `latePenaltyPer10s`. */
-export const LATE_STEP_MS = 10_000;
-
 export interface LateRule {
-  latePenaltyPer10s: number;
+  /** Every whole block of this many seconds past the end costs `latePenaltyPerStep`. */
+  lateStepS: number;
+  latePenaltyPerStep: number;
   latePenaltyMax: number;
 }
 
@@ -16,8 +15,8 @@ export interface LateRule {
  * and shows GAME OVER. 0 when the rule is off.
  */
 export function lateWindowMs(rule: LateRule): number {
-  if (rule.latePenaltyPer10s <= 0 || rule.latePenaltyMax <= 0) return 0;
-  return Math.ceil(rule.latePenaltyMax / rule.latePenaltyPer10s) * LATE_STEP_MS;
+  if (rule.lateStepS <= 0 || rule.latePenaltyPerStep <= 0 || rule.latePenaltyMax <= 0) return 0;
+  return Math.ceil(rule.latePenaltyMax / rule.latePenaltyPerStep) * rule.lateStepS * 1000;
 }
 
 /**
@@ -29,7 +28,7 @@ export function latePenalty(startedAt: string, rule: LateRule & { phaseMinutes: 
   if (window === 0) return 0;
   const at = returnedAt ? Date.parse(returnedAt) : nowMs;
   const lateMs = Math.min(window, Math.max(0, at - phaseEndMs(startedAt, rule.phaseMinutes)));
-  return Math.min(rule.latePenaltyMax, rule.latePenaltyPer10s * Math.floor(lateMs / LATE_STEP_MS));
+  return Math.min(rule.latePenaltyMax, rule.latePenaltyPerStep * Math.floor(lateMs / (rule.lateStepS * 1000)));
 }
 
 /** Inside the home radius of the start point, edge inclusive, like a pellet. */

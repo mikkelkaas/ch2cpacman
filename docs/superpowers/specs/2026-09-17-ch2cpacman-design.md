@@ -266,12 +266,12 @@ reward for being early, only a cost for being late. Decided over a time bonus
 because the start is often in the middle of the course and ending the run on
 arrival would punish passing through it.
 
-Settings gain `homeRadiusM` (15), `latePenaltyPer10s` (1, 0 turns the rule
-off) and `latePenaltyMax` (10). Teams gain `returnedAt`, an ISO timestamp
+Settings gain `homeRadiusM` (15), `lateStepS` (10), `latePenaltyPerStep` (1,
+0 turns the rule off) and `latePenaltyMax` (10). Teams gain `returnedAt`, an ISO timestamp
 written once, like `startedAt`. `lib/late.ts` holds the rule:
 
-- `lateWindowMs = ceil(max / per) × 10 s`, how long the penalty can grow.
-- `latePenalty = min(max, per × floor(min(window, at − end) / 10 s))`, where
+- `lateWindowMs = ceil(max / per) × step`, how long the penalty can grow.
+- `latePenalty = min(max, per × floor(min(window, at − end) / step))`, where
   `at` is `returnedAt` or, for a team not yet home, now.
 
 `phaseState` gains `late`: after the end, no `returnedAt`, inside the window.

@@ -23,7 +23,7 @@ describe('phase', () => {
 });
 
 describe('phase with a late rule', () => {
-  const rule = { latePenaltyPer10s: 1, latePenaltyMax: 3 };
+  const rule = { lateStepS: 10, latePenaltyPerStep: 1, latePenaltyMax: 3 };
   it('is late after the end until the team is home or the cap is reached', () => {
     expect(phaseState({ startedAt, returnedAt: null }, 10, start + 10 * min, rule)).toBe('late');
     expect(phaseState({ startedAt, returnedAt: null }, 10, start + 10 * min + 29_000, rule)).toBe('late');
@@ -34,7 +34,7 @@ describe('phase with a late rule', () => {
     expect(phaseState({ startedAt, returnedAt }, 10, start + 10 * min + 6000, rule)).toBe('over');
   });
   it('is over at the end when the rule is off', () => {
-    expect(phaseState({ startedAt, returnedAt: null }, 10, start + 10 * min, { latePenaltyPer10s: 0, latePenaltyMax: 3 })).toBe('over');
+    expect(phaseState({ startedAt, returnedAt: null }, 10, start + 10 * min, { lateStepS: 10, latePenaltyPerStep: 0, latePenaltyMax: 3 })).toBe('over');
   });
   it('counts how late the team is, from the end', () => {
     expect(lateMs(startedAt, 10, start + 9 * min)).toBe(0);

@@ -92,8 +92,8 @@ export default function HelpButton() {
             <Section title="Hjem igen">
               <p>
                 Holdet skal være tilbage ved startpunktet, når tiden er gået. Er de det ikke, skifter telefonen til <b>LØB HJEM!</b>{' '}
-                med en rød linje til starten, og hvert 10. sekund for sent koster point, indtil de er inden for <i>Hjemmeradius</i> af
-                starten eller loftet <i>Højst tabt for sent</i> er nået. Så viser den GAME OVER. Telefonen stempler selv, når GPS'en
+                med en rød linje til starten, og for hver <i>Straf hver</i> sekunder for sent mister de <i>Point tabt pr. straf</i>,
+                indtil de er inden for <i>Hjemmeradius</i> af starten eller loftet <i>Højst tabt for sent</i> er nået. Så viser den GAME OVER. Telefonen stempler selv, når GPS'en
                 ser den hjemme; ser du holdet komme før telefonen gør, så tryk <b>Hjemme</b> på holdet under Hold. Ingen bonus for at
                 komme tidligt. Sæt point tabt til 0 for at slå reglen fra.
               </p>

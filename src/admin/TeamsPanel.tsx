@@ -34,7 +34,7 @@ export function parseTeamNames(text: string): string[] {
 
 export default function TeamsPanel({ teams, settings, now, onAdd, onReset, onMarkHome, onDelete }: Props) {
   const { phaseMinutes } = settings;
-  const rule = { latePenaltyPer10s: settings.latePenaltyPer10s, latePenaltyMax: settings.latePenaltyMax };
+  const rule = { lateStepS: settings.lateStepS, latePenaltyPerStep: settings.latePenaltyPerStep, latePenaltyMax: settings.latePenaltyMax };
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [qrTeamId, setQrTeamId] = useState<string | null>(null);
@@ -59,7 +59,7 @@ export default function TeamsPanel({ teams, settings, now, onAdd, onReset, onMar
     if (state === 'running') return <span className="text-blue-700">{da.runningUntil(formatClock(phaseEndMs(team.startedAt!, phaseMinutes)))}</span>;
     if (state === 'late') return <span className="text-red-700">{da.runningHome(Math.floor(lateMs(team.startedAt!, phaseMinutes, now) / 1000))}</span>;
     if (team.returnedAt) return <span className="text-green-700">{da.finishedHome(formatClock(team.returnedAt))}</span>;
-    if (rule.latePenaltyPer10s > 0) return <span className="text-amber-700">{da.finishedNotHome}</span>;
+    if (rule.latePenaltyPerStep > 0) return <span className="text-amber-700">{da.finishedNotHome}</span>;
     return <span className="text-green-700">{da.finished}</span>;
   };
 

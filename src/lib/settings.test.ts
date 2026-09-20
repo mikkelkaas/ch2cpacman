@@ -17,7 +17,8 @@ describe('withDefaults, home rule', () => {
   it('fills in the home radius and the late penalty', () => {
     const full = withDefaults({ _id: 's', phaseMinutes: 10, start: null });
     expect(full.homeRadiusM).toBe(15);
-    expect(full.latePenaltyPer10s).toBe(1);
+    expect(full.lateStepS).toBe(10);
+    expect(full.latePenaltyPerStep).toBe(1);
     expect(full.latePenaltyMax).toBe(10);
   });
 });

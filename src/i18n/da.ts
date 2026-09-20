@@ -14,7 +14,7 @@ export const da = {
   unknownCode: 'Ukendt kode',
   changeTeam: 'Skift hold',
   howToPlay: 'SÅDAN SPILLER I',
-  rules: (s: { minutes: number; ghosts: boolean; penalty: number; bonus: number; hasPower: boolean; hasDouble: boolean; latePenalty: number; latePenaltyMax: number }) => [
+  rules: (s: { minutes: number; ghosts: boolean; penalty: number; bonus: number; hasPower: boolean; hasDouble: boolean; lateStep: number; latePenalty: number; latePenaltyMax: number }) => [
     { icon: '⏱', text: `I har ${s.minutes} minutter.` },
     { icon: '•', text: 'Kortet viser prikker. Løb hen til dem.' },
     { icon: 'ᗧ', text: 'Telefonen spiser prikken, når I er tæt nok på. I skal ikke trykke.' },
@@ -24,7 +24,7 @@ export const da = {
     ...(s.hasDouble ? [{ icon: '×2', text: 'Prikker med ×2 giver dobbelte point i ét minut.' }] : []),
     { icon: '⏰', text: 'Når tiden er gået, er spillet slut. Point tæller kun inden for tiden.' },
     ...(s.latePenalty > 0
-      ? [{ icon: '⌂', text: `Vær tilbage ved start, når tiden er gået. Hvert 10. sekund for sent koster ${s.latePenalty} point, højst ${s.latePenaltyMax}.` }]
+      ? [{ icon: '⌂', text: `Vær tilbage ved start, når tiden er gået. Hver ${s.lateStep} sekunder for sent koster ${s.latePenalty} point, højst ${s.latePenaltyMax}.` }]
       : []),
     { icon: '📱', text: 'Hold skærmen tændt og telefonen i hånden.' },
   ],
@@ -114,7 +114,8 @@ export const da = {
   doubleSeconds: 'Dobbelt varer (sek.)',
   homeSettings: 'Hjem igen',
   homeRadius: 'Hjemmeradius (m)',
-  latePenaltyPer10s: 'Point tabt pr. 10 sek. for sent (0 = ingen)',
+  lateStep: 'Straf hver (sek. for sent)',
+  latePenaltyPerStep: 'Point tabt pr. straf (0 = ingen)',
   latePenaltyMax: 'Højst tabt for sent',
   lateColumn: 'For sent hjem',
   lateHome: (n: number) => `for sent hjem: -${n}`,

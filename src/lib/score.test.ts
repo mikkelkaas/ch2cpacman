@@ -84,7 +84,7 @@ describe('score with Dobbelt and ghost events', () => {
 });
 
 describe('score with a late penalty', () => {
-  const late = { ...settings, latePenaltyPer10s: 1, latePenaltyMax: 4 };
+  const late = { ...settings, latePenaltyPerStep: 1, latePenaltyMax: 4 };
   const end = 10 * 60_000;
   const caps = [cap('t1', 'p2', 60_000), cap('t1', 'p1', 90_000)];
 
@@ -107,7 +107,11 @@ describe('score with a late penalty', () => {
     expect(scoreTeam(team, [cap('t1', 'p1', 1000)], pellets, late, [], t0 + end + 60 * 60_000).points).toBe(0);
     expect(scoreTeam(team, caps, pellets, late, [], t0 + 5 * 60_000).late).toBe(0);
   });
+  it('uses the configured step and defaults it to 10 s when the document lacks it', () => {
+    expect(scoreTeam({ ...team, returnedAt: iso(end + 25_000) }, caps, pellets, { ...late, lateStepS: 5 }, [], t0 + end + 60_000).late).toBe(4);
+    expect(scoreTeam({ ...team, returnedAt: iso(end + 25_000) }, caps, pellets, late, [], t0 + end + 60_000).late).toBe(2);
+  });
   it('is off when the penalty is zero, as it is for old settings documents without it', () => {
-    expect(scoreTeam(team, caps, pellets, { ...settings, latePenaltyPer10s: 0 }, [], t0 + end + 60 * 60_000).points).toBe(6);
+    expect(scoreTeam(team, caps, pellets, { ...settings, latePenaltyPerStep: 0 }, [], t0 + end + 60 * 60_000).points).toBe(6);
   });
 });

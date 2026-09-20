@@ -188,7 +188,7 @@ interface GameProps {
 function Game({ team, settings, pellets, captures, events, onTeamChange, onLeaveTeam }: GameProps) {
   const now = useNow(250);
   const { fix, error: geoError } = useGeolocation();
-  const rule = { latePenaltyPer10s: settings.latePenaltyPer10s, latePenaltyMax: settings.latePenaltyMax };
+  const rule = { lateStepS: settings.lateStepS, latePenaltyPerStep: settings.latePenaltyPerStep, latePenaltyMax: settings.latePenaltyMax };
   // The countdown has ended and the team is not home: keep looking for home.
   const afterEnd = !!team.startedAt && phaseState(team, settings.phaseMinutes, now, rule) === 'late';
   const { homeAt } = useReturnHome({ active: afterEnd, fix, team, settings, onTeamChange });
@@ -344,7 +344,7 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
           teamName={team.name}
           photoUrl={team.photoKey ? photoUrl(team.photoKey) : null}
           late={late}
-          homeInTime={rule.latePenaltyPer10s > 0 && !!returnedAt && late === 0}
+          homeInTime={rule.latePenaltyPerStep > 0 && !!returnedAt && late === 0}
         />
       )}
 

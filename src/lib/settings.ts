@@ -10,7 +10,8 @@ export const SETTINGS_DEFAULTS = {
   powerSeconds: 20,
   doubleSeconds: 60,
   homeRadiusM: 15,
-  latePenaltyPer10s: 1,
+  lateStepS: 10,
+  latePenaltyPerStep: 1,
   latePenaltyMax: 10,
 } as const;
 

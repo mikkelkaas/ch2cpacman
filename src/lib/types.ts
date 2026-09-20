@@ -33,8 +33,10 @@ export interface Settings extends GameScoped {
   doubleSeconds?: number;
   /** How close to the start point counts as home, in metres. */
   homeRadiusM?: number;
-  /** Points lost per whole 10 s the team is late home after the countdown; 0 turns the rule off. */
-  latePenaltyPer10s?: number;
+  /** Length in seconds of one late step after the countdown. */
+  lateStepS?: number;
+  /** Points lost per whole late step; 0 turns the rule off. */
+  latePenaltyPerStep?: number;
   /** The late penalty never exceeds this. */
   latePenaltyMax?: number;
 }

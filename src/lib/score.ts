@@ -35,7 +35,7 @@ export interface TeamScore {
   lastCaptureAt: string | null;
 }
 
-type ScoringSettings = Pick<Settings, 'phaseMinutes' | 'doubleSeconds' | 'latePenaltyPer10s' | 'latePenaltyMax'>;
+type ScoringSettings = Pick<Settings, 'phaseMinutes' | 'doubleSeconds' | 'lateStepS' | 'latePenaltyPerStep' | 'latePenaltyMax'>;
 
 const EMPTY = (team: Team): TeamScore => ({ team, points: 0, pellets: [], scored: [], caught: 0, ghostsEaten: 0, pelletPoints: 0, late: 0, lastCaptureAt: null });
 
@@ -43,8 +43,8 @@ const EMPTY = (team: Team): TeamScore => ({ team, points: 0, pellets: [], scored
  * Points = Σ pellet points × Dobbelt multiplier + Σ ghost events − late
  * penalty, floored at 0. A Dobbelt doubles pellets eaten in the `doubleSeconds`
  * after it, never itself and never ghost bonuses. The late penalty grows per
- * 10 s between the end and `returnedAt`, or `nowMs` while the team is still
- * out. Everything is derived from timestamps, so the phone and the admin page
+ * `lateStepS` between the end and `returnedAt`, or `nowMs` while the team is
+ * still out. Everything is derived from timestamps, so the phone and the admin page
  * agree without trusting each other's totals.
  */
 export function scoreTeam(
@@ -86,7 +86,8 @@ export function scoreTeam(
     team.startedAt,
     {
       phaseMinutes: settings.phaseMinutes,
-      latePenaltyPer10s: settings.latePenaltyPer10s ?? 0,
+      lateStepS: settings.lateStepS ?? SETTINGS_DEFAULTS.lateStepS,
+      latePenaltyPerStep: settings.latePenaltyPerStep ?? 0,
       latePenaltyMax: settings.latePenaltyMax ?? SETTINGS_DEFAULTS.latePenaltyMax,
     },
     team.returnedAt,

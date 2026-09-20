@@ -21,7 +21,8 @@ export default function Briefing({ teamName, settings, pellets, onDone, overlay 
     bonus: settings.ghostBonus,
     hasPower: pellets.some(p => p.kind === 'power'),
     hasDouble: pellets.some(p => p.kind === 'double'),
-    latePenalty: settings.latePenaltyPer10s,
+    lateStep: settings.lateStepS,
+    latePenalty: settings.latePenaltyPerStep,
     latePenaltyMax: settings.latePenaltyMax,
   });
   return (

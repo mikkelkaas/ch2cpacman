@@ -43,8 +43,8 @@ built: `ROADMAP.md`.
    pellet's radius; nobody taps anything.
 6. When the countdown ends the team must be back at the start point. If it is,
    the phone shows GAME OVER. If not, it switches to **LØB HJEM!** with a red
-   line to the start and loses points for every 10 seconds late until it is
-   inside the home radius or the penalty cap is reached. The phone stamps the
+   line to the start and loses points for every step of seconds late until it
+   is inside the home radius or the penalty cap is reached. The phone stamps the
    return itself from GPS; if you see the patrol arrive first, click *Hjemme*
    on the team. There is no bonus for being early.
 7. **Stilling** on the admin page refreshes every 10 seconds. Click a row to
@@ -85,23 +85,23 @@ value before clicking the map.
 - The team has to be at the start point when the countdown ends. Being there
   early earns nothing; the run only ends at zero.
 - Not home at zero: the phone shows **LØB HJEM!**, a count-up clock, the
-  distance to the start and a red dashed line to it. Every whole 10 seconds
-  late costs *Point tabt pr. 10 sek. for sent* (default 1), never more than
-  *Højst tabt for sent* (default 10). When the cap is reached the phone stops
+  distance to the start and a red dashed line to it. Every whole step of
+  *Straf hver* seconds late (default 10) costs *Point tabt pr. straf*
+  (default 1), never more than *Højst tabt for sent* (default 10). When the cap is reached the phone stops
   waiting and shows GAME OVER, so a dead phone or a lost signal costs at most
   the cap.
 - Home is a usable GPS fix within *Hjemmeradius* (default 15 m) of the start.
   The phone writes `returnedAt` on the team; the leader can write it with
   *Hjemme* under Hold when the phone is slow or dead. Whichever lands, the
   penalty is computed from that timestamp on both the phone and the admin page.
-- Setting the penalty per 10 s to 0 turns the rule off: GAME OVER at zero as
+- Setting the points per step to 0 turns the rule off: GAME OVER at zero as
   before.
 
 ## Rules of scoring
 
 - A team's window is `startedAt` to `startedAt + minutes`, plus 30 seconds grace
   for an upload that lands late. Captures outside it do not count.
-- Late home: `floor((returnedAt − end) / 10 s) × penalty`, capped. A team not
+- Late home: `floor((returnedAt − end) / step) × penalty`, capped. A team not
   yet home is charged as of now, and as the cap once the late window has
   passed. Subtracted after ghost events, and the total never goes below 0.
 - Each team can eat each pellet once. Pellets are not removed for other teams.

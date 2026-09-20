@@ -5,15 +5,19 @@ const startedAt = '2026-09-20T10:00:00.000Z';
 const t0 = Date.parse(startedAt);
 const iso = (offsetMs: number) => new Date(t0 + offsetMs).toISOString();
 const end = 10 * 60_000;
-const rule = { phaseMinutes: 10, latePenaltyPer10s: 1, latePenaltyMax: 5 };
+const rule = { phaseMinutes: 10, lateStepS: 10, latePenaltyPerStep: 1, latePenaltyMax: 5 };
 
 describe('lateWindowMs', () => {
   it('is how long the penalty keeps growing before it hits the cap', () => {
     expect(lateWindowMs(rule)).toBe(50_000);
-    expect(lateWindowMs({ ...rule, latePenaltyPer10s: 2 })).toBe(30_000);
+    expect(lateWindowMs({ ...rule, latePenaltyPerStep: 2 })).toBe(30_000);
+  });
+  it('scales with the step', () => {
+    expect(lateWindowMs({ ...rule, lateStepS: 30 })).toBe(150_000);
   });
   it('is zero when the rule is off', () => {
-    expect(lateWindowMs({ ...rule, latePenaltyPer10s: 0 })).toBe(0);
+    expect(lateWindowMs({ ...rule, latePenaltyPerStep: 0 })).toBe(0);
+    expect(lateWindowMs({ ...rule, lateStepS: 0 })).toBe(0);
     expect(lateWindowMs({ ...rule, latePenaltyMax: 0 })).toBe(0);
   });
 });
@@ -34,8 +38,14 @@ describe('latePenalty', () => {
     expect(latePenalty(startedAt, rule, null, t0 + end + 21_000)).toBe(2);
     expect(latePenalty(startedAt, rule, undefined, t0 + end + 60 * 60_000)).toBe(5);
   });
+  it('charges per whole step of the configured length', () => {
+    const step30 = { ...rule, lateStepS: 30 };
+    expect(latePenalty(startedAt, step30, iso(end + 29_000), t0 + end + 60_000)).toBe(0);
+    expect(latePenalty(startedAt, step30, iso(end + 30_000), t0 + end + 60_000)).toBe(1);
+    expect(latePenalty(startedAt, step30, iso(end + 65_000), t0 + end + 60_000)).toBe(2);
+  });
   it('is zero when the rule is off, whatever the times', () => {
-    expect(latePenalty(startedAt, { ...rule, latePenaltyPer10s: 0 }, null, t0 + end + 60 * 60_000)).toBe(0);
+    expect(latePenalty(startedAt, { ...rule, latePenaltyPerStep: 0 }, null, t0 + end + 60 * 60_000)).toBe(0);
   });
 });
 
