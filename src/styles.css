@@ -51,6 +51,8 @@ body { font-family: var(--font-body); -webkit-tap-highlight-color: transparent; 
 .pellet-dot.kind-double .pellet-label { color: #000; background: rgba(0, 255, 255, 0.9); }
 .pacman { filter: drop-shadow(0 0 4px rgba(0,0,0,0.6)); }
 .ghost { filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7)); }
+.ghost.angry { animation: angry 0.5s ease-in-out infinite alternate; }
+@keyframes angry { from { filter: drop-shadow(0 0 3px #ff0000); } to { filter: drop-shadow(0 0 10px #ff0000) drop-shadow(0 0 4px #ff0000); } }
 .start-square { width: 14px; height: 14px; background: #2121ff; border: 2px solid #fff; box-shadow: 0 0 8px #2121ff; box-sizing: border-box; }
 .leaflet-container { font-family: var(--font-body); }
 /* Runner map themes. The wrapper carries `theme-<name>`; the tiles carry `dark-tiles`.

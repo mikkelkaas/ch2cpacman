@@ -63,7 +63,12 @@ them immediately.
 ## Ghosts, power pellets and Dobbelt
 
 - **Spøgelser.** Ghosts live on the phone only. They wait out a head start, then
-  walk straight toward the runner's last GPS fix, ignoring terrain. Within 10 m
+  walk straight toward the runner's last GPS fix, ignoring terrain. They are
+  hungry: a ghost speeds up from its base speed to its top speed over a ramp
+  time counted from release or from its last respawn, so the longer it chases
+  without a catch the faster it gets, and a ghost at top speed glows red and
+  its siren doubles in pace. A catch sends it far away and back to base speed.
+  Within 10 m
   the team is caught, loses points and is immune for 20 seconds while the ghost
   jumps at least 100 m away. A ghost within 40 m sets off a siren and a red
   pulse. Every catch is posted as an event the scoreboard subtracts.
@@ -74,10 +79,14 @@ them immediately.
   minute, not itself and not ghost bonuses. The window is computed from capture
   timestamps on both the phone and the admin page.
 
-All numbers are in *Indstillinger*: number of ghosts (0 turns them off), speed,
-head start, points lost per catch, points per eaten ghost, power and Dobbelt
-durations. Defaults: 2 ghosts, 1.5 m/s, 60 s head start, 2 points lost, 3 points
-per ghost, 20 s power, 60 s Dobbelt. Set the type for new dots next to the point
+All numbers are in *Indstillinger*: number of ghosts (0 turns them off), speed
+and top speed in km/h (stored as m/s), seconds to top speed, head start, points
+lost per catch, points per eaten ghost, power and Dobbelt durations. Defaults:
+2 ghosts, 5.4 km/h rising to 14.4 km/h over 60 s, 60 s head start, 2 points
+lost, 3 points per ghost, 20 s power, 60 s Dobbelt. A scout jogs at about
+9 km/h, so within a minute or two of release a ghost outruns the team and a
+catch is a matter of time. Set the top speed equal to the speed for constant
+ghosts. Set the type for new dots next to the point
 value before clicking the map.
 
 ## Coming home

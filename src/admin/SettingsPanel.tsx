@@ -25,6 +25,11 @@ export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Pro
 
   const arming = mode === 'setStart';
   const full = withDefaults(settings);
+  // Speeds are stored in m/s and shown in km/h, which leaders read more easily.
+  const KMH = 3.6;
+  const speedField = (key: 'ghostSpeedMps' | 'ghostMaxSpeedMps', label: string) => (
+    <NumberField key={key} label={label} value={Math.round(full[key] * KMH * 10) / 10} min={0.1} step={0.5} onCommit={value => void onSave({ ...settings, [key]: value / KMH })} />
+  );
   const numberField = (key: keyof Omit<GameSettings, '_id' | 'gameId' | 'start' | 'phaseMinutes' | 'mapTheme'>, label: string, min: number, step = 1) => (
     <NumberField key={key} label={label} value={full[key]} min={min} step={step} onCommit={value => void onSave({ ...settings, [key]: value })} />
   );
@@ -66,7 +71,9 @@ export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Pro
       </label>
       <h3 className="text-xs font-semibold text-gray-500 uppercase pt-2">{da.ghostSettings}</h3>
       {numberField('ghostCount', da.ghostCount, 0)}
-      {numberField('ghostSpeedMps', da.ghostSpeed, 0.1, 0.1)}
+      {speedField('ghostSpeedMps', da.ghostSpeed)}
+      {speedField('ghostMaxSpeedMps', da.ghostMaxSpeed)}
+      {numberField('ghostRampS', da.ghostRamp, 0, 5)}
       {numberField('ghostHeadStartS', da.ghostHeadStart, 0, 5)}
       {numberField('ghostPenalty', da.ghostPenalty, 0)}
       {numberField('ghostBonus', da.ghostBonus, 0)}

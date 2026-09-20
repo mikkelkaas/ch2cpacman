@@ -83,7 +83,10 @@ export default function HelpButton() {
             <Section title="Spøgelser">
               <p>
                 Spøgelserne findes kun på telefonen. De venter et forspring og går derefter lige mod holdets seneste GPS-position uden
-                hensyn til hegn og krat. Kommer et inden for 10 m, mister holdet point og er immunt i 20 sekunder, mens spøgelset hopper
+                hensyn til hegn og krat. De er sultne: fra <i>Fart</i> stiger de til <i>Topfart</i> i løbet af <i>Op i topfart efter</i>{' '}
+                sekunder, talt fra de slippes løs eller sidst fangede nogen, og et spøgelse i topfart gløder rødt. En spejder løber
+                omkring 9 km/t, så med standardtallene indhenter de holdet efter et minut eller to. Sæt topfarten lig farten for
+                spøgelser med fast fart. Kommer et inden for 10 m, mister holdet point og er immunt i 20 sekunder, mens spøgelset hopper
                 langt væk. Inden for 40 m lyder en sirene. Alle tal står under <i>Spøgelser</i> i Indstillinger; sæt antallet til 0 for
                 at slå dem fra. Er det for hårdt på dagen, så sæt point tabt til 1 eller farten ned.
               </p>

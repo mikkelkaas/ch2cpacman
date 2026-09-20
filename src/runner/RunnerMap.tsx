@@ -111,9 +111,9 @@ export default function RunnerMap({ theme, pellets, eatenIds, start, fix, ghosts
       seen.add(ghost.id);
       const existing = ghostMarkers.current.get(ghost.id);
       if (existing) {
-        existing.setLatLng([ghost.lat, ghost.lng]).setIcon(ghostIcon(ghost.color, ghostMode));
+        existing.setLatLng([ghost.lat, ghost.lng]).setIcon(ghostIcon(ghost.color, ghostMode, (ghost.rush ?? 0) >= 1));
       } else {
-        ghostMarkers.current.set(ghost.id, L.marker([ghost.lat, ghost.lng], { icon: ghostIcon(ghost.color, ghostMode), interactive: false, zIndexOffset: 900 }).addTo(map));
+        ghostMarkers.current.set(ghost.id, L.marker([ghost.lat, ghost.lng], { icon: ghostIcon(ghost.color, ghostMode, (ghost.rush ?? 0) >= 1), interactive: false, zIndexOffset: 900 }).addTo(map));
       }
     }
     for (const [id, marker] of ghostMarkers.current) {

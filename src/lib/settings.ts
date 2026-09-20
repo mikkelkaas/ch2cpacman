@@ -4,6 +4,8 @@ export const SETTINGS_DEFAULTS = {
   mapTheme: 'nat' as const,
   ghostCount: 2,
   ghostSpeedMps: 1.5,
+  ghostMaxSpeedMps: 4,
+  ghostRampS: 60,
   ghostHeadStartS: 60,
   ghostPenalty: 2,
   ghostBonus: 3,

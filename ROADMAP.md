@@ -8,8 +8,9 @@ Built so far, for reference: per-team timed runs, GPS pellets with points and
 radius, power pellets, Dobbelt, virtual ghosts, several games, five map
 themes, an admin with standings, an in-app guide, a GPS accuracy guard, QR
 join codes on a phone, a printable team sheet, a team photo before the start
-(stored in cruttelut's file bucket) and a late-home penalty with a "run home"
-mode on the phone. See `README.md`.
+(stored in cruttelut's file bucket), a late-home penalty with a "run home"
+mode on the phone and hungry ghosts that speed up until they catch someone.
+See `README.md`.
 
 ## Recommended next
 

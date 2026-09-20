@@ -70,7 +70,9 @@ export function useGhosts({ active, fix, pellets, team, settings, initialEvents 
 
       const distance = Math.min(...next.ghosts.map(g => haversineM(runner, g)), Infinity);
       setNearest(distance);
-      if (distance < GHOST_WARN_M && !isFrightened(next, nowMs) && nowMs - sirenAt.current > 450) {
+      // A ghost at full rush sirens twice as fast: frantic when it matters.
+      const maxRush = Math.max(0, ...next.ghosts.map(g => g.rush ?? 0));
+      if (distance < GHOST_WARN_M && !isFrightened(next, nowMs) && nowMs - sirenAt.current > 450 - 225 * maxRush) {
         sirenAt.current = nowMs;
         sound.siren();
       }

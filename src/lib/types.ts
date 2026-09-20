@@ -26,6 +26,10 @@ export interface Settings extends GameScoped {
   /** 0 turns ghosts off. Older documents lack these fields; see withDefaults in settings.ts. */
   ghostCount?: number;
   ghostSpeedMps?: number;
+  /** Speed a ghost reaches after `ghostRampS` without a catch. Not above base: constant speed. */
+  ghostMaxSpeedMps?: number;
+  /** Seconds from release or respawn to top speed. */
+  ghostRampS?: number;
   ghostHeadStartS?: number;
   ghostPenalty?: number;
   ghostBonus?: number;

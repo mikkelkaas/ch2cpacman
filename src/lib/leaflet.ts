@@ -42,7 +42,8 @@ export function pelletIcon(pellet: Pellet, extraClass = ''): L.DivIcon {
 }
 
 /** Classic ghost sprite. Blue while frightened, flashing white just before it wears off. */
-export function ghostIcon(color: string, mode: 'normal' | 'frightened' | 'flashing'): L.DivIcon {
+/** `angry`: at top speed, a red glow so the runner can see which ghost to fear. */
+export function ghostIcon(color: string, mode: 'normal' | 'frightened' | 'flashing', angry = false): L.DivIcon {
   const fill = mode === 'normal' ? color : mode === 'frightened' ? '#2121ff' : '#ffffff';
   const eyes = mode === 'normal'
     ? '<circle cx="36" cy="42" r="9" fill="#fff"/><circle cx="64" cy="42" r="9" fill="#fff"/><circle cx="39" cy="44" r="4" fill="#2121ff"/><circle cx="67" cy="44" r="4" fill="#2121ff"/>'
@@ -51,7 +52,7 @@ export function ghostIcon(color: string, mode: 'normal' | 'frightened' | 'flashi
     className: '',
     iconSize: [30, 30],
     iconAnchor: [15, 15],
-    html: `<svg class="ghost ${mode}" viewBox="0 0 100 100" width="30" height="30">
+    html: `<svg class="ghost ${mode}${angry && mode === 'normal' ? ' angry' : ''}" viewBox="0 0 100 100" width="30" height="30">
       <path d="M10 95 V50 A40 40 0 0 1 90 50 V95 L78 82 L66 95 L54 82 L42 95 L30 82 L18 95 Z" fill="${fill}" stroke="#000" stroke-width="4"/>${eyes}</svg>`,
   });
 }

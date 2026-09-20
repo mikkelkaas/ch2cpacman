@@ -13,6 +13,10 @@ export const GHOST_COLORS = ['#ff0000', '#ffb8ff', '#00ffff', '#ffb852'];
 export interface Ghost extends LatLng {
   id: number;
   color: string;
+  /** When the ghost was released or last respawned; the speed ramp counts from here. */
+  spawnedAtMs: number;
+  /** 0..1, how far up the speed ramp the ghost was at the last step. For the UI. */
+  rush?: number;
 }
 
 export interface GhostState {
@@ -62,11 +66,11 @@ function pick<T>(list: readonly T[], rand: () => number): T {
   return list[Math.min(list.length - 1, Math.floor(rand() * list.length))];
 }
 
-export function initialGhosts(settings: GameSettings, runner: LatLng, pellets: readonly Pellet[], rand: () => number = Math.random): GhostState {
+export function initialGhosts(settings: GameSettings, runner: LatLng, pellets: readonly Pellet[], rand: () => number = Math.random, nowMs: number = Date.now()): GhostState {
   const ghosts: Ghost[] = [];
   for (let i = 0; i < settings.ghostCount; i++) {
     const at = spawnPoint(runner, pellets, rand);
-    ghosts.push({ id: i, color: GHOST_COLORS[i % GHOST_COLORS.length], lat: at.lat, lng: at.lng });
+    ghosts.push({ id: i, color: GHOST_COLORS[i % GHOST_COLORS.length], spawnedAtMs: nowMs, lat: at.lat, lng: at.lng });
   }
   return { ghosts, frightenedUntilMs: 0, immuneUntilMs: 0 };
 }
@@ -80,10 +84,27 @@ export function isFrightened(state: GhostState, nowMs: number): boolean {
   return state.frightenedUntilMs > nowMs;
 }
 
+/**
+ * Hungry ghosts: 0 at release or respawn, 1 once `ghostRampS` has passed
+ * without a catch. A ramp of 0 is instantly 1.
+ */
+export function rush(settings: GameSettings, ghost: Ghost, releaseMs: number, nowMs: number): number {
+  if (settings.ghostRampS <= 0) return 1;
+  const since = nowMs - Math.max(ghost.spawnedAtMs, releaseMs);
+  return Math.min(1, Math.max(0, since / (settings.ghostRampS * 1000)));
+}
+
+/** Base speed climbing to the top speed with `rush`; a top speed not above base means constant. */
+export function ghostSpeedMps(settings: GameSettings, ghost: Ghost, releaseMs: number, nowMs: number): number {
+  const top = Math.max(settings.ghostSpeedMps, settings.ghostMaxSpeedMps);
+  return settings.ghostSpeedMps + (top - settings.ghostSpeedMps) * rush(settings, ghost, releaseMs, nowMs);
+}
+
 export function stepGhosts(state: GhostState, input: StepInput): { state: GhostState; events: GhostEvent[] } {
   const { settings, runner, pellets, startedAt, nowMs, dtS } = input;
   const rand = input.rand ?? Math.random;
-  const released = nowMs >= Date.parse(startedAt) + settings.ghostHeadStartS * 1000;
+  const releaseMs = Date.parse(startedAt) + settings.ghostHeadStartS * 1000;
+  const released = nowMs >= releaseMs;
   const frightened = isFrightened(state, nowMs);
   const immune = state.immuneUntilMs > nowMs;
   const events: GhostEvent[] = [];
@@ -96,12 +117,12 @@ export function stepGhosts(state: GhostState, input: StepInput): { state: GhostS
     if (distance <= GHOST_TAG_M) {
       if (frightened) {
         events.push({ type: 'ghost_eaten', points: settings.ghostBonus });
-        return { ...ghost, ...spawnPoint(runner, pellets, rand) };
+        return { ...ghost, ...spawnPoint(runner, pellets, rand), spawnedAtMs: nowMs, rush: 0 };
       }
       if (released && !immune) {
         events.push({ type: 'ghost_caught', points: -settings.ghostPenalty });
         immuneUntilMs = nowMs + GHOST_IMMUNITY_S * 1000;
-        return { ...ghost, ...spawnPoint(runner, pellets, rand) };
+        return { ...ghost, ...spawnPoint(runner, pellets, rand), spawnedAtMs: nowMs, rush: 0 };
       }
       return ghost;
     }
@@ -111,8 +132,8 @@ export function stepGhosts(state: GhostState, input: StepInput): { state: GhostS
       const away = (headingDeg(runner, ghost) + 360) % 360;
       next = { ...ghost, ...moveToward(ghost, away, GHOST_FLEE_MPS * dtS) };
     } else {
-      const step = Math.min(settings.ghostSpeedMps * dtS, distance);
-      next = { ...ghost, ...moveToward(ghost, headingDeg(ghost, runner), step) };
+      const step = Math.min(ghostSpeedMps(settings, ghost, releaseMs, nowMs) * dtS, distance);
+      next = { ...ghost, ...moveToward(ghost, headingDeg(ghost, runner), step), rush: rush(settings, ghost, releaseMs, nowMs) };
     }
     return next;
   });

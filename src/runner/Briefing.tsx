@@ -17,6 +17,7 @@ export default function Briefing({ teamName, settings, pellets, onDone, overlay 
   const rules = da.rules({
     minutes: settings.phaseMinutes,
     ghosts: settings.ghostCount > 0,
+    hungry: settings.ghostMaxSpeedMps > settings.ghostSpeedMps,
     penalty: settings.ghostPenalty,
     bonus: settings.ghostBonus,
     hasPower: pellets.some(p => p.kind === 'power'),

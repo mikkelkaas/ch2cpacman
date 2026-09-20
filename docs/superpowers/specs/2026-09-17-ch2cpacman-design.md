@@ -291,6 +291,18 @@ Admin: the leader at the start sees the patrol arrive and can stamp
 GPS shadow or a dead phone. Standings show the penalty in a column and in the
 row detail; the team list shows "Løber hjem, N sek. for sent" while out.
 
+## Hungry ghosts (added 2026-09-20)
+
+Constant 1.5 m/s ghosts never caught a jogging patrol. Each ghost now carries
+`spawnedAtMs` (release or last respawn) and its speed is
+`base + (top − base) × rush`, `rush = min(1, sinceSpawn / ghostRampS)`.
+Settings gain `ghostMaxSpeedMps` (4) and `ghostRampS` (60); a top speed not
+above the base means constant speed as before. A catch or a meal respawns the
+ghost with a fresh stamp, so pressure builds until a catch and then relaxes.
+`rush` is kept on the ghost for the UI: the siren cadence halves at full rush
+and the icon gets a red glow. The admin shows both speeds in km/h and stores
+m/s.
+
 ## Out of scope
 
 Routes, voice, questions, authentication, pellet scarcity between teams,
