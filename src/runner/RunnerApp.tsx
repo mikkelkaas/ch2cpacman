@@ -8,7 +8,9 @@ import { useNow } from '../hooks/useNow';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { da } from '../i18n/da';
 import { api } from '../lib/api';
-import { phaseState, remainingMs } from '../lib/phase';
+import { haversineM } from '../lib/geo';
+import { latePenalty } from '../lib/late';
+import { lateMs, phaseState, remainingMs } from '../lib/phase';
 import { pending } from '../lib/queue';
 import { isUsableFix } from '../lib/fix';
 import { isFrightened } from '../lib/ghosts';
@@ -26,6 +28,7 @@ import PhotoScreen from './PhotoScreen';
 import RunnerMap from './RunnerMap';
 import { useCaptureEngine } from './useCaptureEngine';
 import { useGhosts } from './useGhosts';
+import { useReturnHome } from './useReturnHome';
 
 interface GameData {
   settings: Settings;
@@ -184,14 +187,20 @@ interface GameProps {
 
 function Game({ team, settings, pellets, captures, events, onTeamChange, onLeaveTeam }: GameProps) {
   const now = useNow(250);
-  const state = phaseState(team, settings.phaseMinutes, now);
+  const { fix, error: geoError } = useGeolocation();
+  const rule = { latePenaltyPer10s: settings.latePenaltyPer10s, latePenaltyMax: settings.latePenaltyMax };
+  // The countdown has ended and the team is not home: keep looking for home.
+  const afterEnd = !!team.startedAt && phaseState(team, settings.phaseMinutes, now, rule) === 'late';
+  const { homeAt } = useReturnHome({ active: afterEnd, fix, team, settings, onTeamChange });
+  // The phone's own stamp counts before the upload lands, like queued captures.
+  const returnedAt = team.returnedAt ?? homeAt;
+  const state = phaseState({ startedAt: team.startedAt, returnedAt }, settings.phaseMinutes, now, rule);
   const [briefed, setBriefed] = useState(state !== 'idle');
   const [photoSkipped, setPhotoSkipped] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [readyFlash, setReadyFlash] = useState(false);
-  const { fix, error: geoError } = useGeolocation();
   useWakeLock(state !== 'over');
 
   const initialEatenIds = useMemo(() => {
@@ -213,7 +222,18 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
       if (pellet.kind === 'power') ghosts.powerEaten();
     },
   });
-  const points = Math.max(0, engine.points + ghosts.eventPoints);
+  const late = team.startedAt ? latePenalty(team.startedAt, { ...rule, phaseMinutes: settings.phaseMinutes }, returnedAt, now) : 0;
+  const points = Math.max(0, engine.points + ghosts.eventPoints - late);
+  const homeDistanceM = fix && settings.start ? Math.round(haversineM(fix, settings.start)) : null;
+
+  // Cues for the run home: a siren when the countdown ends away from home,
+  // a blip each time the penalty grows.
+  useEffect(() => {
+    if (state === 'late') sound.siren();
+  }, [state]);
+  useEffect(() => {
+    if (state === 'late' && late > 0) sound.blip();
+  }, [state, late]);
   const frightened = ghosts.ghosts ? isFrightened(ghosts.ghosts, now) : false;
   const ghostMode = !frightened ? 'normal' : ghosts.ghosts!.frightenedUntilMs - now < 5000 ? 'flashing' : 'frightened';
   const shielded = (ghosts.ghosts?.immuneUntilMs ?? 0) > now;
@@ -267,6 +287,7 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
         ghostMode={ghostMode}
         shielded={state === 'running' && shielded}
         dimmed={state === 'over'}
+        homeRadiusM={state === 'late' ? settings.homeRadiusM : null}
       />
 
       {state === 'idle' && (
@@ -291,14 +312,17 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
         </div>
       )}
 
-      {state === 'running' && (
+      {(state === 'running' || state === 'late') && (
         <Hud
           remainingMs={remainingMs(team.startedAt!, settings.phaseMinutes, now)}
+          lateMs={state === 'late' ? lateMs(team.startedAt!, settings.phaseMinutes, now) : 0}
+          latePoints={late}
+          homeDistanceM={homeDistanceM}
           points={points}
           pendingCount={engine.pendingCount}
           onShowRules={() => setRulesOpen(true)}
           doubleMs={doubleMs}
-          danger={ghosts.nearest < GHOST_WARN_M}
+          danger={state === 'late' || ghosts.nearest < GHOST_WARN_M}
           power={frightened}
           ghostBanner={ghosts.banner}
           weakSignal={!!fix && !isUsableFix(fix)}
@@ -313,7 +337,16 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
         </div>
       )}
 
-      {state === 'over' && <GameOver points={points} pelletCount={eatenCount} teamName={team.name} photoUrl={team.photoKey ? photoUrl(team.photoKey) : null} />}
+      {state === 'over' && (
+        <GameOver
+          points={points}
+          pelletCount={eatenCount}
+          teamName={team.name}
+          photoUrl={team.photoKey ? photoUrl(team.photoKey) : null}
+          late={late}
+          homeInTime={rule.latePenaltyPer10s > 0 && !!returnedAt && late === 0}
+        />
+      )}
 
       {rulesOpen && <Briefing overlay teamName={team.name} settings={settings} pellets={pellets} onDone={() => setRulesOpen(false)} />}
     </div>

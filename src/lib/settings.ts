@@ -9,6 +9,9 @@ export const SETTINGS_DEFAULTS = {
   ghostBonus: 3,
   powerSeconds: 20,
   doubleSeconds: 60,
+  homeRadiusM: 15,
+  latePenaltyPer10s: 1,
+  latePenaltyMax: 10,
 } as const;
 
 /** Distance at which a ghost catches the team, or is eaten while blue. */

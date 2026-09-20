@@ -72,6 +72,10 @@ export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Pro
       {numberField('ghostBonus', da.ghostBonus, 0)}
       {numberField('powerSeconds', da.powerSeconds, 1)}
       {numberField('doubleSeconds', da.doubleSeconds, 1)}
+      <h3 className="text-xs font-semibold text-gray-500 uppercase pt-2">{da.homeSettings}</h3>
+      {numberField('homeRadiusM', da.homeRadius, 1)}
+      {numberField('latePenaltyPer10s', da.latePenaltyPer10s, 0)}
+      {numberField('latePenaltyMax', da.latePenaltyMax, 0)}
     </Panel>
   );
 }

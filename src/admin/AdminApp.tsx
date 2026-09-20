@@ -7,6 +7,7 @@ import { rankTeams } from '../lib/score';
 import { generateTeamCode } from '../lib/teamCode';
 import { deleteFile, PHOTO_BUCKET } from '../lib/files';
 import { inGame } from '../lib/games';
+import { withDefaults } from '../lib/settings';
 import type { Capture, Game, GameEvent, LatLng, Pellet, PelletKind, Settings, Team } from '../lib/types';
 import AdminMap from './AdminMap';
 import type { MapMode } from './AdminMap';
@@ -140,7 +141,13 @@ export default function AdminApp({ gameId }: { gameId: string }) {
   const resetTeam = (team: Team) =>
     write(async () => {
       await deleteTeamCaptures(team);
-      const saved = await api.teams.update({ ...team, startedAt: null });
+      const saved = await api.teams.update({ ...team, startedAt: null, returnedAt: null });
+      setTeams(list => list.map(t => (t._id === saved._id ? saved : t)));
+    });
+
+  const markHome = (team: Team) =>
+    write(async () => {
+      const saved = await api.teams.update({ ...team, returnedAt: new Date().toISOString() });
       setTeams(list => list.map(t => (t._id === saved._id ? saved : t)));
     });
 
@@ -152,9 +159,10 @@ export default function AdminApp({ gameId }: { gameId: string }) {
       setTeams(list => list.filter(t => t._id !== team._id));
     });
 
+  // `now` is a dependency: a team still out after the end loses points as the clock runs.
   const scores = useMemo(
-    () => (settings && pellets ? rankTeams(teams, captures, pellets, settings, events) : []),
-    [teams, captures, pellets, settings, events],
+    () => (settings && pellets ? rankTeams(teams, captures, pellets, settings, events, now) : []),
+    [teams, captures, pellets, settings, events, now],
   );
 
   const shell = (children: React.ReactNode) => <div className="min-h-full bg-gray-100 text-gray-900 font-body">{children}</div>;
@@ -229,7 +237,7 @@ export default function AdminApp({ gameId }: { gameId: string }) {
         </div>
         <div className="flex flex-col gap-4 p-4">
           <Scoreboard scores={scores} />
-          <TeamsPanel teams={teams} phaseMinutes={settings.phaseMinutes} now={now} onAdd={addTeams} onReset={resetTeam} onDelete={deleteTeam} />
+          <TeamsPanel teams={teams} settings={withDefaults(settings)} now={now} onAdd={addTeams} onReset={resetTeam} onMarkHome={markHome} onDelete={deleteTeam} />
           <SettingsPanel settings={settings} mode={mode} onSave={saveSettings} onSetMode={setMode} />
           <PelletsPanel pellets={pellets} start={settings.start} selectedId={selectedId} newPoints={newPoints} onNewPointsChange={setNewPoints} newKind={newKind} onNewKindChange={setNewKind} onSelect={setSelectedId} onSave={savePellet} onDelete={deletePellet} />
         </div>

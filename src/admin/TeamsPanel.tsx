@@ -2,17 +2,19 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { da, formatClock } from '../i18n/da';
 import { photoUrl } from '../lib/files';
-import { phaseEndMs, phaseState } from '../lib/phase';
-import type { Team } from '../lib/types';
+import { lateMs, phaseEndMs, phaseState } from '../lib/phase';
+import type { GameSettings, Team } from '../lib/types';
 import QrDialog from './QrDialog';
 import { Button, inputClass, Panel } from './ui';
 
 interface Props {
   teams: readonly Team[];
-  phaseMinutes: number;
+  settings: GameSettings;
   now: number;
   onAdd: (names: string[]) => Promise<void>;
   onReset: (team: Team) => Promise<void>;
+  /** The leader saw the team back at the start: stamp it home now. */
+  onMarkHome: (team: Team) => Promise<void>;
   onDelete: (team: Team) => Promise<void>;
 }
 
@@ -30,7 +32,9 @@ export function parseTeamNames(text: string): string[] {
   return names;
 }
 
-export default function TeamsPanel({ teams, phaseMinutes, now, onAdd, onReset, onDelete }: Props) {
+export default function TeamsPanel({ teams, settings, now, onAdd, onReset, onMarkHome, onDelete }: Props) {
+  const { phaseMinutes } = settings;
+  const rule = { latePenaltyPer10s: settings.latePenaltyPer10s, latePenaltyMax: settings.latePenaltyMax };
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [qrTeamId, setQrTeamId] = useState<string | null>(null);
@@ -50,9 +54,12 @@ export default function TeamsPanel({ teams, phaseMinutes, now, onAdd, onReset, o
   };
 
   const stateLabel = (team: Team) => {
-    const state = phaseState(team, phaseMinutes, now);
+    const state = phaseState(team, phaseMinutes, now, rule);
     if (state === 'idle') return <span className="text-gray-500">{da.notStarted}</span>;
     if (state === 'running') return <span className="text-blue-700">{da.runningUntil(formatClock(phaseEndMs(team.startedAt!, phaseMinutes)))}</span>;
+    if (state === 'late') return <span className="text-red-700">{da.runningHome(Math.floor(lateMs(team.startedAt!, phaseMinutes, now) / 1000))}</span>;
+    if (team.returnedAt) return <span className="text-green-700">{da.finishedHome(formatClock(team.returnedAt))}</span>;
+    if (rule.latePenaltyPer10s > 0) return <span className="text-amber-700">{da.finishedNotHome}</span>;
     return <span className="text-green-700">{da.finished}</span>;
   };
 
@@ -111,6 +118,13 @@ export default function TeamsPanel({ teams, phaseMinutes, now, onAdd, onReset, o
                   <td className="py-2 text-right whitespace-nowrap">
                     <button onClick={() => setQrTeamId(team._id)} className="text-blue-700 hover:underline text-xs mr-3">
                       {da.showQr}
+                    </button>
+                    <button
+                      onClick={() => confirm(da.confirmMarkHome(team.name)) && void onMarkHome(team)}
+                      className="text-green-700 hover:underline text-xs disabled:text-gray-300 disabled:no-underline mr-3"
+                      disabled={!team.startedAt || !!team.returnedAt}
+                    >
+                      {da.markHome}
                     </button>
                     <button onClick={() => confirm(da.confirmReset(team.name)) && void onReset(team)} className="text-amber-700 hover:underline text-xs disabled:text-gray-300 disabled:no-underline mr-3" disabled={!team.startedAt}>
                       {da.reset}

@@ -7,8 +7,9 @@ list is a menu. Effort is a rough size for one person who knows the code:
 Built so far, for reference: per-team timed runs, GPS pellets with points and
 radius, power pellets, Dobbelt, virtual ghosts, several games, five map
 themes, an admin with standings, an in-app guide, a GPS accuracy guard, QR
-join codes on a phone, a printable team sheet and a team photo before the start
-(stored in cruttelut's file bucket). See `README.md`.
+join codes on a phone, a printable team sheet, a team photo before the start
+(stored in cruttelut's file bucket) and a late-home penalty with a "run home"
+mode on the phone. See `README.md`.
 
 ## Recommended next
 
@@ -41,8 +42,10 @@ leaders.
 
 ## Fairness and running it smoothly
 
-- **Time bonus for returning** (S). Reaching the start point before time runs
-  out converts the remaining seconds to points. Brings teams back on their own.
+- **Time bonus for returning** (S). The late penalty is built; the carrot
+  half, remaining seconds to points on reaching home early, is not. Would end
+  the run at arrival, so only worth it if the start is not in the middle of the
+  course.
 - **Pause a team** (M). Admin pauses and resumes one team's clock when a phone
   dies or a child falls. The phase window becomes a set of intervals in
   `scoreTeam`.

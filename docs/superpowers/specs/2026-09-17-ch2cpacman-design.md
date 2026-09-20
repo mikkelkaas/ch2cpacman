@@ -259,7 +259,39 @@ Settings also gained `mapTheme`: `nat` (default, inverted and brightened),
 `neon`, `lys` (plain), `amber`, `groen`. The runner map applies the matching
 CSS filter preset to the tiles only.
 
+## Coming home (added 2026-09-20)
+
+The team must be at the start point when the countdown ends; there is no
+reward for being early, only a cost for being late. Decided over a time bonus
+because the start is often in the middle of the course and ending the run on
+arrival would punish passing through it.
+
+Settings gain `homeRadiusM` (15), `latePenaltyPer10s` (1, 0 turns the rule
+off) and `latePenaltyMax` (10). Teams gain `returnedAt`, an ISO timestamp
+written once, like `startedAt`. `lib/late.ts` holds the rule:
+
+- `lateWindowMs = ceil(max / per) × 10 s`, how long the penalty can grow.
+- `latePenalty = min(max, per × floor(min(window, at − end) / 10 s))`, where
+  `at` is `returnedAt` or, for a team not yet home, now.
+
+`phaseState` gains `late`: after the end, no `returnedAt`, inside the window.
+`scoreTeam` takes `nowMs` and subtracts the penalty after ghost events, still
+floored at 0; the admin recomputes every second so a team that is out loses
+points live. Reset clears `returnedAt`.
+
+Phone: in `late` the capture engine and ghosts are off; the HUD shows LØB
+HJEM!, a count-up clock, the distance to the start and the penalty so far; the
+map draws the home radius and a dashed line to it. `useReturnHome` stamps
+`returnedAt` on the first usable fix inside the radius, trusts the stamp
+locally at once, and retries the PUT until it lands. At the cap the phone
+stops waiting and shows GAME OVER, so a dead phone costs at most the cap.
+
+Admin: the leader at the start sees the patrol arrive and can stamp
+`returnedAt` with a *Hjemme* button, the second layer of enforcement for a
+GPS shadow or a dead phone. Standings show the penalty in a column and in the
+row detail; the team list shows "Løber hjem, N sek. for sent" while out.
+
 ## Out of scope
 
-Routes, home base, voice, photos, questions, authentication,
-pellet scarcity between teams, bonus fruit, human ghosts, anti-spoofing.
+Routes, voice, questions, authentication, pellet scarcity between teams,
+bonus fruit, human ghosts, anti-spoofing.

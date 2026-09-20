@@ -3,7 +3,18 @@ import ArcadeTitle from '../components/ArcadeTitle';
 import { da } from '../i18n/da';
 import { sound } from '../lib/sound';
 
-export default function GameOver({ points, pelletCount, teamName, photoUrl = null }: { points: number; pelletCount: number; teamName: string; photoUrl?: string | null }) {
+interface Props {
+  points: number;
+  pelletCount: number;
+  teamName: string;
+  photoUrl?: string | null;
+  /** Points lost for coming home late. */
+  late?: number;
+  /** The rule is on and the team made it home without losing anything. */
+  homeInTime?: boolean;
+}
+
+export default function GameOver({ points, pelletCount, teamName, photoUrl = null, late = 0, homeInTime = false }: Props) {
   useEffect(() => {
     sound.gameOver();
   }, []);
@@ -20,6 +31,8 @@ export default function GameOver({ points, pelletCount, teamName, photoUrl = nul
         <div className="font-arcade text-[10px] text-pellet">{da.finalScore}</div>
         <div className="font-arcade text-5xl text-pac glow-pac tabular-nums">{String(points).padStart(4, '0')}</div>
         <div className="text-gray-300">{da.pelletsEaten(pelletCount)}</div>
+        {late > 0 && <div className="text-ghost-red">{da.lateLine(late)}</div>}
+        {homeInTime && <div className="text-ghost-cyan">{da.homeInTime}</div>}
         <div className="text-gray-400 text-sm mt-2">{da.wellPlayed}</div>
       </div>
     </div>

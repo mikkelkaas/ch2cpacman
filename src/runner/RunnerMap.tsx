@@ -17,9 +17,11 @@ interface Props {
   /** Draw a dashed ring around the runner while immune after a catch. */
   shielded?: boolean;
   dimmed?: boolean;
+  /** Draw the home radius around the start and a line to it from the runner. */
+  homeRadiusM?: number | null;
 }
 
-export default function RunnerMap({ theme, pellets, eatenIds, start, fix, ghosts = [], ghostMode = 'normal', shielded = false, dimmed = false }: Props) {
+export default function RunnerMap({ theme, pellets, eatenIds, start, fix, ghosts = [], ghostMode = 'normal', shielded = false, dimmed = false, homeRadiusM = null }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const pelletLayers = useRef(new Map<string, L.Marker>());
@@ -28,6 +30,8 @@ export default function RunnerMap({ theme, pellets, eatenIds, start, fix, ghosts
   const runnerMarker = useRef<L.Marker | null>(null);
   const accuracyRing = useRef<L.Circle | null>(null);
   const shieldRing = useRef<L.Circle | null>(null);
+  const homeRing = useRef<L.Circle | null>(null);
+  const homeLine = useRef<L.Polyline | null>(null);
   const ghostMarkers = useRef(new Map<number, L.Marker>());
   const prevFix = useRef<Fix | null>(null);
   const headingRef = useRef(90);
@@ -131,6 +135,26 @@ export default function RunnerMap({ theme, pellets, eatenIds, start, fix, ghosts
       shieldRing.current = null;
     }
   }, [shielded, fix]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (homeRadiusM === null || !start) {
+      homeRing.current?.remove();
+      homeLine.current?.remove();
+      homeRing.current = null;
+      homeLine.current = null;
+      return;
+    }
+    const home: [number, number] = [start.lat, start.lng];
+    homeRing.current ??= L.circle(home, { radius: homeRadiusM, color: '#ff0000', dashArray: '6 6', weight: 3, fillColor: '#ff0000', fillOpacity: 0.15 }).addTo(map);
+    homeRing.current.setLatLng(home).setRadius(homeRadiusM);
+    if (fix) {
+      const path: [number, number][] = [[fix.lat, fix.lng], home];
+      homeLine.current ??= L.polyline(path, { color: '#ff0000', dashArray: '8 8', weight: 3, opacity: 0.9 }).addTo(map);
+      homeLine.current.setLatLngs(path);
+    }
+  }, [homeRadiusM, start, fix]);
 
   return (
     <div className={`relative h-full w-full theme-${theme}`}>

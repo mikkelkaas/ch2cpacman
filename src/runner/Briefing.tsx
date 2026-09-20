@@ -21,6 +21,8 @@ export default function Briefing({ teamName, settings, pellets, onDone, overlay 
     bonus: settings.ghostBonus,
     hasPower: pellets.some(p => p.kind === 'power'),
     hasDouble: pellets.some(p => p.kind === 'double'),
+    latePenalty: settings.latePenaltyPer10s,
+    latePenaltyMax: settings.latePenaltyMax,
   });
   return (
     <div className={`${overlay ? 'absolute inset-0 z-[500] bg-black/95' : 'min-h-full'} flex flex-col items-center justify-center gap-6 p-6 overflow-y-auto scanlines`}>

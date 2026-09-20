@@ -89,6 +89,16 @@ export default function HelpButton() {
               </p>
             </Section>
 
+            <Section title="Hjem igen">
+              <p>
+                Holdet skal være tilbage ved startpunktet, når tiden er gået. Er de det ikke, skifter telefonen til <b>LØB HJEM!</b>{' '}
+                med en rød linje til starten, og hvert 10. sekund for sent koster point, indtil de er inden for <i>Hjemmeradius</i> af
+                starten eller loftet <i>Højst tabt for sent</i> er nået. Så viser den GAME OVER. Telefonen stempler selv, når GPS'en
+                ser den hjemme; ser du holdet komme før telefonen gør, så tryk <b>Hjemme</b> på holdet under Hold. Ingen bonus for at
+                komme tidligt. Sæt point tabt til 0 for at slå reglen fra.
+              </p>
+            </Section>
+
             <Section title="2. Når et hold kommer">
               <ol className="list-decimal pl-5 space-y-1">
                 <li>Åbn løbersiden på telefonen (link øverst) og tast holdets kode.</li>
@@ -101,8 +111,9 @@ export default function HelpButton() {
                   Når de trykker <b>TRYK START</b>, starter deres ur. Stillingen her viser dem inden for 10 sekunder.
                 </li>
                 <li>
-                  Når tiden er gået, viser telefonen GAME OVER og deres score. Prikker spist efter tiden tæller ikke, men de har 30
-                  sekunders nåde til at få de sidste sendt op.
+                  Når tiden er gået, og holdet er ved starten, viser telefonen GAME OVER og deres score. Er de ikke, løber de hjem med
+                  voksende straf, se <i>Hjem igen</i>. Prikker spist efter tiden tæller ikke, men de har 30 sekunders nåde til at få de
+                  sidste sendt op.
                 </li>
               </ol>
               <p className="mt-2">
@@ -115,10 +126,11 @@ export default function HelpButton() {
               <ul className="list-disc pl-5 space-y-1">
                 <li>
                   <b>Stilling</b> opdateres hvert 10. sekund. Klik på et hold for at se, hvad de spiste, fangster og spiste spøgelser.
-                  Point = prikker × dobbelt + spøgelsesbonus − fangster, aldrig under 0.
+                  Point = prikker × dobbelt + spøgelsesbonus − fangster − for sent hjem, aldrig under 0.
                 </li>
                 <li>
-                  <b>Nulstil</b> sletter holdets starttid og alle deres point, så de kan løbe igen. Telefonen går tilbage til reglerne,
+                  <b>Hjemme</b> stempler holdet som tilbage ved starten nu, hvis telefonen ikke selv nåede det.{' '}
+                  <b>Nulstil</b> sletter holdets starttid, hjemkomst og alle deres point, så de kan løbe igen. Telefonen går tilbage til reglerne,
                   når den genindlæses.
                 </li>
                 <li>

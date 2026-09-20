@@ -102,12 +102,13 @@ export function useCaptureEngine({ active, fix, pellets, team, settings, initial
   }, [pendingCount, upload]);
 
   // Score the way the admin does, from timestamps, so Dobbelt windows agree.
+  // Pellets only: the caller adds ghost events and subtracts the late penalty.
   const points = scoreTeam(
     team,
     [...captureTimes.entries()].map(([pelletId, at]) => ({ _id: pelletId, teamId: team._id, pelletId, capturedAt: at, lat: 0, lng: 0, clientId: pelletId })),
     pellets,
     settings,
-  ).points;
+  ).pelletPoints;
 
   return { eatenIds, points, pendingCount, lastEaten, captureTimes, setCaptureTimes };
 }

@@ -31,6 +31,12 @@ export interface Settings extends GameScoped {
   ghostBonus?: number;
   powerSeconds?: number;
   doubleSeconds?: number;
+  /** How close to the start point counts as home, in metres. */
+  homeRadiusM?: number;
+  /** Points lost per whole 10 s the team is late home after the countdown; 0 turns the rule off. */
+  latePenaltyPer10s?: number;
+  /** The late penalty never exceeds this. */
+  latePenaltyMax?: number;
 }
 
 /** Filled-in settings, every optional field present. */
@@ -46,6 +52,12 @@ export interface Team extends GameScoped {
   createdAt: string;
   /** ISO timestamp written once when the team taps Start; null until then. */
   startedAt: string | null;
+  /**
+   * ISO timestamp of reaching the start point after the countdown, written by
+   * the phone when it sees itself there or by the leader who sees the team.
+   * Missing or null: not home yet.
+   */
+  returnedAt?: string | null;
   /** Key in the photo bucket of the team photo taken before the start. */
   photoKey?: string | null;
 }

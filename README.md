@@ -41,10 +41,16 @@ built: `ROADMAP.md`.
    *TRYK START*. The countdown starts
    the moment they tap. The phone eats pellets automatically when inside a
    pellet's radius; nobody taps anything.
-6. **Stilling** on the admin page refreshes every 10 seconds. Click a row to
+6. When the countdown ends the team must be back at the start point. If it is,
+   the phone shows GAME OVER. If not, it switches to **LØB HJEM!** with a red
+   line to the start and loses points for every 10 seconds late until it is
+   inside the home radius or the penalty cap is reached. The phone stamps the
+   return itself from GPS; if you see the patrol arrive first, click *Hjemme*
+   on the team. There is no bonus for being early.
+7. **Stilling** on the admin page refreshes every 10 seconds. Click a row to
    see which pellets a team ate.
-7. If a team needs to run again, *Nulstil* clears its start time and deletes its
-   captures. *Slet* removes the team entirely.
+8. If a team needs to run again, *Nulstil* clears its start time, its return
+   and deletes its captures. *Slet* removes the team entirely.
 
 Fixes worse than 30 m are shown but not trusted: no pellet is eaten and no
 ghost catches on them, and the HUD says "SVAGT GPS-SIGNAL".
@@ -74,10 +80,30 @@ durations. Defaults: 2 ghosts, 1.5 m/s, 60 s head start, 2 points lost, 3 points
 per ghost, 20 s power, 60 s Dobbelt. Set the type for new dots next to the point
 value before clicking the map.
 
+## Coming home
+
+- The team has to be at the start point when the countdown ends. Being there
+  early earns nothing; the run only ends at zero.
+- Not home at zero: the phone shows **LØB HJEM!**, a count-up clock, the
+  distance to the start and a red dashed line to it. Every whole 10 seconds
+  late costs *Point tabt pr. 10 sek. for sent* (default 1), never more than
+  *Højst tabt for sent* (default 10). When the cap is reached the phone stops
+  waiting and shows GAME OVER, so a dead phone or a lost signal costs at most
+  the cap.
+- Home is a usable GPS fix within *Hjemmeradius* (default 15 m) of the start.
+  The phone writes `returnedAt` on the team; the leader can write it with
+  *Hjemme* under Hold when the phone is slow or dead. Whichever lands, the
+  penalty is computed from that timestamp on both the phone and the admin page.
+- Setting the penalty per 10 s to 0 turns the rule off: GAME OVER at zero as
+  before.
+
 ## Rules of scoring
 
 - A team's window is `startedAt` to `startedAt + minutes`, plus 30 seconds grace
   for an upload that lands late. Captures outside it do not count.
+- Late home: `floor((returnedAt − end) / 10 s) × penalty`, capped. A team not
+  yet home is charged as of now, and as the cap once the late window has
+  passed. Subtracted after ghost events, and the total never goes below 0.
 - Each team can eat each pellet once. Pellets are not removed for other teams.
 - Points = pellets × Dobbelt multiplier + ghost bonuses − catches, never below 0.
 - Every team sees the same full map, whether it plays at 9:00 or 16:00.

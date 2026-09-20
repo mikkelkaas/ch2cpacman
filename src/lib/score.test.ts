@@ -82,3 +82,32 @@ describe('score with Dobbelt and ghost events', () => {
     expect(floored.points).toBe(0);
   });
 });
+
+describe('score with a late penalty', () => {
+  const late = { ...settings, latePenaltyPer10s: 1, latePenaltyMax: 4 };
+  const end = 10 * 60_000;
+  const caps = [cap('t1', 'p2', 60_000), cap('t1', 'p1', 90_000)];
+
+  it('subtracts the penalty for a team that came home late and reports it', () => {
+    const s = scoreTeam({ ...team, returnedAt: iso(end + 25_000) }, caps, pellets, late, [], t0 + end + 60_000);
+    expect(s.late).toBe(2);
+    expect(s.pelletPoints).toBe(6);
+    expect(s.points).toBe(4);
+  });
+  it('subtracts nothing for a team home in time', () => {
+    const s = scoreTeam({ ...team, returnedAt: iso(end + 3000) }, caps, pellets, late, [], t0 + end + 60_000);
+    expect(s.late).toBe(0);
+    expect(s.points).toBe(6);
+  });
+  it('grows with now for a team still out, and caps', () => {
+    expect(scoreTeam(team, caps, pellets, late, [], t0 + end + 15_000).late).toBe(1);
+    expect(scoreTeam(team, caps, pellets, late, [], t0 + end + 60 * 60_000).late).toBe(4);
+  });
+  it('floors at zero and never touches a run that is still going', () => {
+    expect(scoreTeam(team, [cap('t1', 'p1', 1000)], pellets, late, [], t0 + end + 60 * 60_000).points).toBe(0);
+    expect(scoreTeam(team, caps, pellets, late, [], t0 + 5 * 60_000).late).toBe(0);
+  });
+  it('is off when the penalty is zero, as it is for old settings documents without it', () => {
+    expect(scoreTeam(team, caps, pellets, { ...settings, latePenaltyPer10s: 0 }, [], t0 + end + 60 * 60_000).points).toBe(6);
+  });
+});
