@@ -76,6 +76,7 @@ export const da = {
   // Spectator
   spectator: 'TILSKUER',
   spectatorHint: 'I kigger med på løberens telefon. Denne telefon sporer ikke.',
+  tapForSound: 'Tryk på skærmen for at slå lyden til',
   waitingForStart: 'Venter på at holdet starter…',
   waitingForRunner: 'VENTER PÅ LØBERENS TELEFON…',
   lastSeen: (s: number) => `SIDST SET FOR ${s} S SIDEN`,

@@ -35,11 +35,31 @@ interface Props {
  */
 export default function SpectatorGame({ team: initialTeam, settings, pellets, captures: initialCaptures, events: initialEvents, onLeaveTeam }: Props) {
   const now = useNow(250);
-  const { team, captures, events, heartbeat, error, retry } = useSpectate({ team: initialTeam, captures: initialCaptures, events: initialEvents });
+  // Stop polling once the game is over; a one-poll lag before this takes
+  // effect is fine, so the flag is derived from the previous render's team.
+  const pollingEnabled = useRef(true);
+  const { team, captures, events, heartbeat, error, retry } = useSpectate(
+    { team: initialTeam, captures: initialCaptures, events: initialEvents },
+    pollingEnabled.current,
+  );
   const rule = { lateStepS: settings.lateStepS, latePenaltyPerStep: settings.latePenaltyPerStep, latePenaltyMax: settings.latePenaltyMax };
   const state = phaseState(team, settings.phaseMinutes, now, rule);
+  useEffect(() => {
+    pollingEnabled.current = state !== 'over';
+  }, [state]);
   const [rulesOpen, setRulesOpen] = useState(false);
   useWakeLock(state === 'running' || state === 'late');
+
+  // A spectator never taps Start, so nothing has unlocked audio yet: take the
+  // first tap anywhere as that gesture.
+  useEffect(() => {
+    const unlock = () => {
+      sound.unlock();
+      window.removeEventListener('pointerdown', unlock);
+    };
+    window.addEventListener('pointerdown', unlock);
+    return () => window.removeEventListener('pointerdown', unlock);
+  }, []);
 
   // Score exactly as the admin and the runner do, from timestamps.
   const score = scoreTeam(team, captures, pellets, settings, events, now);
@@ -49,7 +69,7 @@ export default function SpectatorGame({ team: initialTeam, settings, pellets, ca
 
   // The runner phone's picture, and how old it is.
   const stale = isStale(heartbeat, now);
-  const fix = heartbeat?.fix ? { ...heartbeat.fix } : null;
+  const fix = heartbeat?.fix ?? null;
   const ghostState = heartbeat?.ghosts ?? null;
   const frightened = ghostState ? isFrightened(ghostState, now) : false;
   const ghostMode = !frightened ? 'normal' : ghostState!.frightenedUntilMs - now < 5000 ? 'flashing' : 'frightened';
@@ -123,6 +143,7 @@ export default function SpectatorGame({ team: initialTeam, settings, pellets, ca
           <div className="font-arcade text-xs text-ghost-cyan">{da.spectator}</div>
           <p className="text-gray-200 text-center">{da.waitingForStart}</p>
           <p className="text-gray-500 text-center text-sm">{da.spectatorHint}</p>
+          <p className="text-gray-500 text-center text-sm">{da.tapForSound}</p>
           <div className="flex gap-4 text-xs text-gray-500">
             <button onClick={() => setRulesOpen(true)} className="underline">
               {da.showRules}

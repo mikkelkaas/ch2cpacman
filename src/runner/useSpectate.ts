@@ -17,7 +17,7 @@ interface Initial {
  * events for the score, and the runner phone's heartbeat for the map. A
  * failed poll keeps the last good data and surfaces the error for a retry bar.
  */
-export function useSpectate(initial: Initial) {
+export function useSpectate(initial: Initial, enabled = true) {
   const [team, setTeam] = useState(initial.team);
   const [captures, setCaptures] = useState(initial.captures);
   const [events, setEvents] = useState(initial.events);
@@ -37,6 +37,6 @@ export function useSpectate(initial: Initial) {
     setHeartbeat(beats[0] ?? null);
   }, [teamId]);
 
-  const { error, reload } = usePolling(load, HEARTBEAT_MS);
+  const { error, reload } = usePolling(load, HEARTBEAT_MS, enabled);
   return { team, captures, events, heartbeat, error, retry: reload };
 }
