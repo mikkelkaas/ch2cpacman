@@ -30,6 +30,7 @@ import PhotoScreen from './PhotoScreen';
 import RunnerMap from './RunnerMap';
 import { useCaptureEngine } from './useCaptureEngine';
 import { useGhosts } from './useGhosts';
+import { useHeartbeat } from './useHeartbeat';
 import { useReturnHome } from './useReturnHome';
 
 interface GameData {
@@ -237,6 +238,8 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
       if (pellet.kind === 'power') ghosts.powerEaten();
     },
   });
+  // Publish this phone's fix and ghosts for spectators while the team is out.
+  useHeartbeat({ active: state === 'running' || state === 'late', team, fix, ghosts: ghosts.ghosts });
   const late = team.startedAt ? latePenalty(team.startedAt, { ...rule, phaseMinutes: settings.phaseMinutes }, returnedAt, now) : 0;
   const points = Math.max(0, engine.points + ghosts.eventPoints - late);
   const homeDistanceM = fix && settings.start ? Math.round(haversineM(fix, settings.start)) : null;
