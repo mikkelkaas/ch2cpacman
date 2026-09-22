@@ -14,6 +14,23 @@ export function dedupeCaptures(captures: readonly Capture[]): Capture[] {
   return [...best.values()];
 }
 
+/** Pellet id to the earliest capture time for one team. What the phone's HUD needs. */
+export function captureTimesOf(captures: readonly Capture[], teamId: string): Map<string, string> {
+  const m = new Map<string, string>();
+  for (const c of dedupeCaptures(captures)) if (c.teamId === teamId) m.set(c.pelletId, c.capturedAt);
+  return m;
+}
+
+/** Milliseconds of Dobbelt left, from the most recent double pellet eaten. 0 when none is active. */
+export function doubleRemainingMs(captureTimes: ReadonlyMap<string, string>, pellets: readonly Pellet[], doubleSeconds: number, nowMs: number): number {
+  return Math.max(
+    0,
+    ...pellets
+      .filter(p => p.kind === 'double' && captureTimes.has(p._id))
+      .map(p => Date.parse(captureTimes.get(p._id)!) + doubleSeconds * 1000 - nowMs),
+  );
+}
+
 export interface ScoredPellet {
   pellet: Pellet;
   capturedAt: string;

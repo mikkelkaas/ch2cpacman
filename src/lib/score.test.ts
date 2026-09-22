@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dedupeCaptures, rankTeams, scoreTeam } from './score';
+import { captureTimesOf, dedupeCaptures, doubleRemainingMs, rankTeams, scoreTeam } from './score';
 import type { Capture, Pellet, Team } from './types';
 // Dobbelt and ghost event tests below reuse these fixtures.
 
@@ -113,5 +113,33 @@ describe('score with a late penalty', () => {
   });
   it('is off when the penalty is zero, as it is for old settings documents without it', () => {
     expect(scoreTeam(team, caps, pellets, { ...settings, latePenaltyPerStep: 0 }, [], t0 + end + 60 * 60_000).points).toBe(6);
+  });
+});
+
+describe('captureTimesOf', () => {
+  it('maps each pellet to the earliest capture of one team', () => {
+    const captures = [
+      { _id: 'a', teamId: 't1', pelletId: 'p1', capturedAt: '2026-09-22T10:00:05.000Z', lat: 0, lng: 0, clientId: 'a' },
+      { _id: 'b', teamId: 't1', pelletId: 'p1', capturedAt: '2026-09-22T10:00:01.000Z', lat: 0, lng: 0, clientId: 'b' },
+      { _id: 'c', teamId: 't2', pelletId: 'p2', capturedAt: '2026-09-22T10:00:02.000Z', lat: 0, lng: 0, clientId: 'c' },
+    ];
+    expect(captureTimesOf(captures, 't1')).toEqual(new Map([['p1', '2026-09-22T10:00:01.000Z']]));
+  });
+});
+
+describe('doubleRemainingMs', () => {
+  const pellets = [
+    { _id: 'd1', name: 'x2', lat: 0, lng: 0, radiusM: 20, points: 1, kind: 'double' as const },
+    { _id: 'n1', name: 'n', lat: 0, lng: 0, radiusM: 20, points: 1 },
+  ];
+  const t0 = Date.parse('2026-09-22T10:00:00.000Z');
+  it('counts down from the most recent double pellet eaten', () => {
+    const times = new Map([['d1', new Date(t0).toISOString()], ['n1', new Date(t0 + 1000).toISOString()]]);
+    expect(doubleRemainingMs(times, pellets, 60, t0 + 15_000)).toBe(45_000);
+  });
+  it('is 0 once the window has passed or nothing double was eaten', () => {
+    const times = new Map([['d1', new Date(t0).toISOString()]]);
+    expect(doubleRemainingMs(times, pellets, 60, t0 + 61_000)).toBe(0);
+    expect(doubleRemainingMs(new Map(), pellets, 60, t0)).toBe(0);
   });
 });

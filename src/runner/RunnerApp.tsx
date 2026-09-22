@@ -14,7 +14,7 @@ import { lateMs, phaseState, remainingMs } from '../lib/phase';
 import { pending } from '../lib/queue';
 import { isUsableFix } from '../lib/fix';
 import { isFrightened } from '../lib/ghosts';
-import { dedupeCaptures } from '../lib/score';
+import { dedupeCaptures, doubleRemainingMs } from '../lib/score';
 import { GHOST_WARN_M, withDefaults } from '../lib/settings';
 import { sound } from '../lib/sound';
 import { photoUrl } from '../lib/files';
@@ -252,13 +252,7 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
   const frightened = ghosts.ghosts ? isFrightened(ghosts.ghosts, now) : false;
   const ghostMode = !frightened ? 'normal' : ghosts.ghosts!.frightenedUntilMs - now < 5000 ? 'flashing' : 'frightened';
   const shielded = (ghosts.ghosts?.immuneUntilMs ?? 0) > now;
-  // Dobbelt left: from the most recent double pellet eaten within the window.
-  const doubleMs = Math.max(
-    0,
-    ...pellets
-      .filter(p => p.kind === 'double' && engine.captureTimes.has(p._id))
-      .map(p => Date.parse(engine.captureTimes.get(p._id)!) + settings.doubleSeconds * 1000 - now),
-  );
+  const doubleMs = doubleRemainingMs(engine.captureTimes, pellets, settings.doubleSeconds, now);
 
   const start = async () => {
     setStarting(true);
