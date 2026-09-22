@@ -72,12 +72,16 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
   }, []);
 
   // A scanned QR or a reload carries the code and role in the address: join
-  // without typing. Consumed once per code, so a team change made later on
-  // the code screen is not undone when the team list refreshes.
-  const consumedJoinCode = useRef<string | null>(null);
+  // without typing. Consumed once per code and role, so a team change made
+  // later on the code screen is not undone when the team list refreshes, but
+  // navigating to a different role on the same code (join -> watch) still
+  // takes effect.
+  const consumedJoin = useRef<string | null>(null);
   useEffect(() => {
-    if (!joinCode || !teams || consumedJoinCode.current === joinCode) return;
-    consumedJoinCode.current = joinCode;
+    if (!joinCode || !teams) return;
+    const key = `${joinCode}:${joinRole}`;
+    if (consumedJoin.current === key) return;
+    consumedJoin.current = key;
     // No such team (a stale link, a typo in the address): the stored team
     // stands, and the address is corrected below.
     const match = teams.find(t => t.code === joinCode);

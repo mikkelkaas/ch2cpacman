@@ -209,3 +209,5 @@ for players only.
 - [ ] Spectator, phone gone quiet: lock the runner phone for 15 s. The spectator's
   runner and ghosts fade and "SIDST SET FOR … S SIDEN" counts up. Unlock: it
   snaps back.
+- [ ] Spectator, weak signal: cover the runner phone's GPS for 15 s. The
+  spectator shows SVAGT GPS-SIGNAL, not SIDST SET.

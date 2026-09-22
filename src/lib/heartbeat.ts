@@ -42,6 +42,11 @@ export function sameBeat(a: Pick<Heartbeat, 'fix' | 'ghosts'> | null, b: Pick<He
   return JSON.stringify({ fix: a.fix, ghosts: a.ghosts }) === JSON.stringify({ fix: b.fix, ghosts: b.ghosts });
 }
 
+/** Skip a write only when nothing changed AND the last write is recent enough that the spectator cannot mistake silence for a dead phone. */
+export function shouldSkipBeat(prev: Pick<Heartbeat, 'fix' | 'ghosts'> | null, next: Pick<Heartbeat, 'fix' | 'ghosts'>, lastSentAtMs: number, nowMs: number): boolean {
+  return sameBeat(prev, next) && nowMs - lastSentAtMs < STALE_MS / 2;
+}
+
 export function staleForMs(beat: Pick<Heartbeat, 'at'> | null, nowMs: number): number | null {
   if (!beat) return null;
   return Math.max(0, nowMs - Date.parse(beat.at));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { heartbeatFromGame, isStale, sameBeat, staleForMs, STALE_MS } from './heartbeat';
+import { heartbeatFromGame, isStale, sameBeat, shouldSkipBeat, staleForMs, STALE_MS } from './heartbeat';
 import type { GhostState } from './ghosts';
 
 const team = { _id: 't1', gameId: 'g1' };
@@ -32,6 +32,19 @@ describe('sameBeat', () => {
   it('is false when a ghost moved', () => {
     const moved = { ...ghosts, ghosts: [{ ...ghosts.ghosts[0], lat: 56.12 }] };
     expect(sameBeat({ fix, ghosts }, { fix, ghosts: moved })).toBe(false);
+  });
+});
+
+describe('shouldSkipBeat', () => {
+  it('skips when unchanged and recent', () => {
+    expect(shouldSkipBeat({ fix, ghosts }, { fix, ghosts }, 10_000, 10_000 + STALE_MS / 2 - 1)).toBe(true);
+  });
+  it('does not skip when unchanged but STALE_MS / 2 or more has passed', () => {
+    expect(shouldSkipBeat({ fix, ghosts }, { fix, ghosts }, 10_000, 10_000 + STALE_MS / 2)).toBe(false);
+  });
+  it('does not skip when changed even if recent', () => {
+    const moved = { ...ghosts, ghosts: [{ ...ghosts.ghosts[0], lat: 56.12 }] };
+    expect(shouldSkipBeat({ fix, ghosts }, { fix, ghosts: moved }, 10_000, 10_000 + 100)).toBe(false);
   });
 });
 
