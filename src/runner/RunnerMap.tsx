@@ -19,9 +19,11 @@ interface Props {
   dimmed?: boolean;
   /** Draw the home radius around the start and a line to it from the runner. */
   homeRadiusM?: number | null;
+  /** Spectator only: the picture is old. Runner and ghosts go translucent, pellets stay. */
+  faded?: boolean;
 }
 
-export default function RunnerMap({ theme, pellets, eatenIds, start, fix, ghosts = [], ghostMode = 'normal', shielded = false, dimmed = false, homeRadiusM = null }: Props) {
+export default function RunnerMap({ theme, pellets, eatenIds, start, fix, ghosts = [], ghostMode = 'normal', shielded = false, dimmed = false, homeRadiusM = null, faded = false }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const pelletLayers = useRef(new Map<string, L.Marker>());
@@ -123,6 +125,13 @@ export default function RunnerMap({ theme, pellets, eatenIds, start, fix, ghosts
       }
     }
   }, [ghosts, ghostMode]);
+
+  // Fade the moving parts when the picture is stale.
+  useEffect(() => {
+    const opacity = faded ? 0.35 : 1;
+    runnerMarker.current?.setOpacity(opacity);
+    for (const marker of ghostMarkers.current.values()) marker.setOpacity(opacity);
+  }, [faded, fix, ghosts]);
 
   useEffect(() => {
     const map = mapRef.current;

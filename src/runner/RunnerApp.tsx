@@ -28,6 +28,7 @@ import GameOver from './GameOver';
 import Hud from './Hud';
 import PhotoScreen from './PhotoScreen';
 import RunnerMap from './RunnerMap';
+import SpectatorGame from './SpectatorGame';
 import { useCaptureEngine } from './useCaptureEngine';
 import { useGhosts } from './useGhosts';
 import { useHeartbeat } from './useHeartbeat';
@@ -174,6 +175,20 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
           </button>
         </div>
       </FullScreenMessage>
+    );
+  }
+
+  if (role === 'spectator') {
+    return (
+      <SpectatorGame
+        key={`watch-${team._id}`}
+        team={team}
+        settings={withDefaults(settings)}
+        pellets={pellets}
+        captures={captures}
+        events={events}
+        onLeaveTeam={() => chooseTeam(null)}
+      />
     );
   }
 

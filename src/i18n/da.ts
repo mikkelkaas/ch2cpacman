@@ -73,6 +73,13 @@ export const da = {
   mute: 'Lyd fra',
   unmute: 'Lyd til',
 
+  // Spectator
+  spectator: 'TILSKUER',
+  spectatorHint: 'I kigger med på løberens telefon. Denne telefon sporer ikke.',
+  waitingForStart: 'Venter på at holdet starter…',
+  waitingForRunner: 'VENTER PÅ LØBERENS TELEFON…',
+  lastSeen: (s: number) => `SIDST SET FOR ${s} S SIDEN`,
+
   // Admin
   admin: 'Admin',
   games: 'Spil',
