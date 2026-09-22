@@ -25,15 +25,16 @@ export default function GamesPage() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      let [gameList, settingsList, teamList, pelletList, captureList, eventList] = await Promise.all([
+      let [gameList, settingsList, teamList, pelletList, captureList, eventList, heartbeatList] = await Promise.all([
         api.games.list(),
         api.settings.list(),
         api.teams.list(),
         api.pellets.list(),
         api.captures.list(),
         api.events.list(),
+        api.heartbeats.list().catch(() => []),
       ]);
-      const stray = [...orphans(settingsList), ...orphans(teamList), ...orphans(pelletList), ...orphans(captureList), ...orphans(eventList)];
+      const stray = [...orphans(settingsList), ...orphans(teamList), ...orphans(pelletList), ...orphans(captureList), ...orphans(eventList), ...orphans(heartbeatList)];
       if (stray.length > 0) {
         let home = homeForOrphans(gameList);
         if (!home) {
@@ -47,6 +48,7 @@ export default function GamesPage() {
           ...orphans(pelletList).map(r => api.pellets.update({ ...r, gameId })),
           ...orphans(captureList).map(r => api.captures.update({ ...r, gameId })),
           ...orphans(eventList).map(r => api.events.update({ ...r, gameId })),
+          ...orphans(heartbeatList).map(r => api.heartbeats.update({ ...r, gameId })),
         ]);
         teamList = teamList.map(r => (r.gameId ? r : { ...r, gameId }));
         pelletList = pelletList.map(r => (r.gameId ? r : { ...r, gameId }));
@@ -86,12 +88,13 @@ export default function GamesPage() {
     if (!confirm(da.confirmDeleteGame(game.name))) return;
     setBusy(true);
     try {
-      const [settingsList, teamList, pelletList, captureList, eventList] = await Promise.all([
+      const [settingsList, teamList, pelletList, captureList, eventList, heartbeatList] = await Promise.all([
         api.settings.list(),
         api.teams.list(),
         api.pellets.list(),
         api.captures.list(),
         api.events.list(),
+        api.heartbeats.list().catch(() => []),
       ]);
       const mine = <T extends { gameId?: string }>(list: T[]) => list.filter(r => r.gameId === game._id);
       await Promise.all([
@@ -101,6 +104,7 @@ export default function GamesPage() {
         ...mine(pelletList).map(r => api.pellets.remove(r._id)),
         ...mine(teamList).map(r => api.teams.remove(r._id)),
         ...mine(settingsList).map(r => api.settings.remove(r._id)),
+        ...mine(heartbeatList).map(r => api.heartbeats.remove(r._id)),
       ]);
       await api.games.remove(game._id);
       setGames(list => (list ?? []).filter(g => g._id !== game._id));

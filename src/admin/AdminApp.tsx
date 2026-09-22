@@ -135,7 +135,12 @@ export default function AdminApp({ gameId }: { gameId: string }) {
   const deleteTeamCaptures = async (team: Team) => {
     const mine = captures.filter(c => c.teamId === team._id);
     const myEvents = events.filter(e => e.teamId === team._id);
-    await Promise.all([...mine.map(c => api.captures.remove(c._id)), ...myEvents.map(e => api.events.remove(e._id))]);
+    const beats = await api.heartbeats.list({ teamId: team._id }).catch(() => []);
+    await Promise.all([
+      ...mine.map(c => api.captures.remove(c._id)),
+      ...myEvents.map(e => api.events.remove(e._id)),
+      ...beats.map(b => api.heartbeats.remove(b._id)),
+    ]);
     setCaptures(list => list.filter(c => c.teamId !== team._id));
     setEvents(list => list.filter(e => e.teamId !== team._id));
   };

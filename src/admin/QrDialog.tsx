@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { joinUrl } from '../lib/route';
+import type { Role } from '../lib/route';
 import { da } from '../i18n/da';
 import type { Team } from '../lib/types';
 import QrCode from './QrCode';
@@ -17,8 +18,9 @@ interface Props {
  */
 export default function QrDialog({ teams, initialId, onClose }: Props) {
   const [index, setIndex] = useState(Math.max(0, teams.findIndex(t => t._id === initialId)));
+  const [role, setRole] = useState<Role>('runner');
   const team = teams[index];
-  const url = joinUrl(team.code);
+  const url = joinUrl(team.code, role);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -43,9 +45,17 @@ export default function QrDialog({ teams, initialId, onClose }: Props) {
           <span className="inline-block w-4 h-4 rounded-full border border-gray-300" style={{ background: team.color }} />
           {team.name}
         </div>
+        <div className="flex gap-2">
+          <Button variant={role === 'runner' ? 'primary' : 'secondary'} onClick={() => setRole('runner')}>
+            {da.qrForRunner}
+          </Button>
+          <Button variant={role === 'spectator' ? 'primary' : 'secondary'} onClick={() => setRole('spectator')}>
+            {da.qrForSpectator}
+          </Button>
+        </div>
         <QrCode text={url} className="w-full max-w-xs [&>svg]:w-full [&>svg]:h-auto" />
         <div className="font-mono text-4xl tracking-[0.3em]">{team.code}</div>
-        <p className="text-sm text-gray-500">{da.qrTitle}</p>
+        <p className="text-sm text-gray-500">{role === 'spectator' ? da.qrSpectatorTitle : da.qrTitle}</p>
         <p className="text-xs text-gray-400 break-all">{da.qrOrType(`${window.location.origin}${window.location.pathname}`)}</p>
       </div>
       <div className="w-full max-w-sm flex gap-2">
