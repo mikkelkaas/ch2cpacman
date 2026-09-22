@@ -14,6 +14,8 @@ import { lateMs, phaseState, remainingMs } from '../lib/phase';
 import { pending } from '../lib/queue';
 import { isUsableFix } from '../lib/fix';
 import { isFrightened } from '../lib/ghosts';
+import { restoredGhosts } from '../lib/heartbeat';
+import type { Heartbeat } from '../lib/heartbeat';
 import { dedupeCaptures, doubleRemainingMs } from '../lib/score';
 import { GHOST_WARN_M, withDefaults } from '../lib/settings';
 import { sound } from '../lib/sound';
@@ -40,6 +42,8 @@ interface GameData {
   pellets: Pellet[];
   captures: Capture[];
   events: GameEvent[];
+  /** This team's last heartbeat, so a reload continues the ghosts. */
+  heartbeat: Heartbeat | null;
 }
 
 export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { joinCode?: string | null; joinRole?: Role }) {
@@ -113,11 +117,12 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
     if (!loadTeamId) return;
     setDataError(null);
     try {
-      const [settingsList, pelletList, captures, events] = await Promise.all([
+      const [settingsList, pelletList, captures, events, beats] = await Promise.all([
         api.settings.list(),
         api.pellets.list(),
         api.captures.list({ teamId: loadTeamId }),
         api.events.list({ teamId: loadTeamId }).catch(() => [] as GameEvent[]),
+        api.heartbeats.list({ teamId: loadTeamId }).catch(() => [] as Heartbeat[]),
       ]);
       const forGame = <T extends { gameId?: string }>(list: T[]) => (gameId ? list.filter(r => r.gameId === gameId) : list.filter(r => !r.gameId));
       const settings = forGame(settingsList)[0] ?? null;
@@ -126,6 +131,7 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
         pellets: forGame(pelletList),
         captures,
         events,
+        heartbeat: beats[0] ?? null,
       });
     } catch (err) {
       setDataError(err instanceof Error ? err.message : String(err));
@@ -161,7 +167,7 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
   }
   if (!data) return <FullScreenMessage title={da.loading} />;
 
-  const { settings, pellets, captures, events } = data;
+  const { settings, pellets, captures, events, heartbeat } = data;
   if (!settings._id || !settings.start || pellets.length === 0) {
     return (
       <FullScreenMessage title={da.notSetUp}>
@@ -200,6 +206,7 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
       pellets={pellets}
       captures={captures}
       events={events}
+      heartbeat={heartbeat}
       onTeamChange={updated => setTeams(list => (list ? list.map(t => (t._id === updated._id ? updated : t)) : list))}
       onLeaveTeam={() => chooseTeam(null)}
     />
@@ -212,11 +219,13 @@ interface GameProps {
   pellets: Pellet[];
   captures: Capture[];
   events: GameEvent[];
+  /** The last heartbeat of this run, if any, so the ghosts continue after a reload. */
+  heartbeat: Heartbeat | null;
   onTeamChange: (team: Team) => void;
   onLeaveTeam: () => void;
 }
 
-function Game({ team, settings, pellets, captures, events, onTeamChange, onLeaveTeam }: GameProps) {
+function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChange, onLeaveTeam }: GameProps) {
   const now = useNow(250);
   const { fix, error: geoError } = useGeolocation();
   const rule = { lateStepS: settings.lateStepS, latePenaltyPerStep: settings.latePenaltyPerStep, latePenaltyMax: settings.latePenaltyMax };
@@ -241,7 +250,10 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
     return ids;
   }, [captures, team._id]);
 
-  const ghosts = useGhosts({ active: state === 'running', fix, pellets, team, settings, initialEvents: events });
+  // Continue the chase from this run's last beat: same positions, same speed
+  // ramp, same power and immunity timers, instead of fresh ghosts on reload.
+  const restored = useMemo(() => restoredGhosts(heartbeat, team), [heartbeat, team]);
+  const ghosts = useGhosts({ active: state === 'running', fix, pellets, team, settings, initialEvents: events, restored });
   const engine = useCaptureEngine({
     active: state === 'running',
     fix,

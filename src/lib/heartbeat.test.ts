@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { heartbeatFromGame, isStale, sameBeat, shouldSkipBeat, staleForMs, STALE_MS } from './heartbeat';
+import { heartbeatFromGame, isStale, restoredGhosts, sameBeat, shouldSkipBeat, staleForMs, STALE_MS } from './heartbeat';
 import type { GhostState } from './ghosts';
 
 const team = { _id: 't1', gameId: 'g1' };
@@ -60,5 +60,24 @@ describe('isStale', () => {
   it('reports how long since the last beat, or null without one', () => {
     expect(staleForMs({ at }, 13_500)).toBe(3_500);
     expect(staleForMs(null, 13_500)).toBeNull();
+  });
+});
+
+describe('restoredGhosts', () => {
+  const startedAt = '2026-09-22T10:00:00.000Z';
+  const team = { startedAt };
+  it('returns the stored ghost state, spawn times included, when the beat is from this run', () => {
+    const beat = { at: '2026-09-22T10:03:00.000Z', ghosts };
+    expect(restoredGhosts(beat, team)).toBe(ghosts);
+    expect(restoredGhosts(beat, team)!.ghosts[0].spawnedAtMs).toBe(500);
+  });
+  it('ignores a beat from before this start', () => {
+    const beat = { at: '2026-09-22T09:59:59.000Z', ghosts };
+    expect(restoredGhosts(beat, team)).toBeNull();
+  });
+  it('is null without a beat, without ghosts, or before the team has started', () => {
+    expect(restoredGhosts(null, team)).toBeNull();
+    expect(restoredGhosts({ at: '2026-09-22T10:03:00.000Z', ghosts: null }, team)).toBeNull();
+    expect(restoredGhosts({ at: '2026-09-22T10:03:00.000Z', ghosts }, { startedAt: null })).toBeNull();
   });
 });

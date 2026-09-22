@@ -56,3 +56,15 @@ export function isStale(beat: Pick<Heartbeat, 'at'> | null, nowMs: number): bool
   const age = staleForMs(beat, nowMs);
   return age === null || age >= STALE_MS;
 }
+
+/**
+ * The ghost state to continue from after the runner's phone reloads: the last
+ * beat of this run, if it has ghosts. Spawn times and timers are the phone's
+ * own clock, so positions, speed ramp and power/immunity carry straight over.
+ * A beat from before this start (an earlier run) is ignored.
+ */
+export function restoredGhosts(beat: Pick<Heartbeat, 'at' | 'ghosts'> | null, team: Pick<Team, 'startedAt'>): GhostState | null {
+  if (!beat || !beat.ghosts || !team.startedAt) return null;
+  if (Date.parse(beat.at) < Date.parse(team.startedAt)) return null;
+  return beat.ghosts;
+}

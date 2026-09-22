@@ -21,6 +21,8 @@ interface Options {
   settings: GameSettings;
   /** Events already on the server for this team, so a reload keeps their points. */
   initialEvents: readonly GameEvent[];
+  /** This run's last heartbeat, so a reload continues the chase instead of respawning. */
+  restored?: GhostState | null;
 }
 
 export interface GhostBanner {
@@ -34,7 +36,7 @@ export interface GhostBanner {
  * each catch or meal as an event (queued, then uploaded) and keeps a running
  * total of their points for the on-screen score.
  */
-export function useGhosts({ active, fix, pellets, team, settings, initialEvents }: Options) {
+export function useGhosts({ active, fix, pellets, team, settings, initialEvents, restored = null }: Options) {
   const [state, setState] = useState<GhostState | null>(null);
   const [eventPoints, setEventPoints] = useState(() => {
     const seen = new Set(initialEvents.map(e => e.clientId));
@@ -48,13 +50,14 @@ export function useGhosts({ active, fix, pellets, team, settings, initialEvents 
   fixRef.current = fix;
   const sirenAt = useRef(0);
 
-  // Spawn once the phase is running and a fix exists.
+  // Spawn once the phase is running and a fix exists, or pick up where the
+  // last beat left the ghosts if the page was reloaded mid-run.
   useEffect(() => {
     if (!active || !fix || !isUsableFix(fix) || stateRef.current || settings.ghostCount === 0) return;
-    const initial = initialGhosts(settings, fix, pellets);
+    const initial = restored ?? initialGhosts(settings, fix, pellets);
     stateRef.current = initial;
     setState(initial);
-  }, [active, fix, pellets, settings]);
+  }, [active, fix, pellets, settings, restored]);
 
   useEffect(() => {
     if (!active || !team.startedAt || settings.ghostCount === 0) return;
