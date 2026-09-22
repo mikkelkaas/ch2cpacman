@@ -14,11 +14,12 @@ import { lateMs, phaseState, remainingMs } from '../lib/phase';
 import { pending } from '../lib/queue';
 import { isUsableFix } from '../lib/fix';
 import { isFrightened } from '../lib/ghosts';
-import { dedupeCaptures } from '../lib/score';
+import { dedupeCaptures, doubleRemainingMs } from '../lib/score';
 import { GHOST_WARN_M, withDefaults } from '../lib/settings';
 import { sound } from '../lib/sound';
 import { photoUrl } from '../lib/files';
 import { setJoinHash } from '../lib/route';
+import type { Role } from '../lib/route';
 import { storage } from '../lib/storage';
 import type { Capture, GameEvent, GameSettings, Pellet, Settings, Team } from '../lib/types';
 import Briefing from './Briefing';
@@ -27,8 +28,11 @@ import GameOver from './GameOver';
 import Hud from './Hud';
 import PhotoScreen from './PhotoScreen';
 import RunnerMap from './RunnerMap';
+import SpectatorGame from './SpectatorGame';
+import SpectatorQr from './SpectatorQr';
 import { useCaptureEngine } from './useCaptureEngine';
 import { useGhosts } from './useGhosts';
+import { useHeartbeat } from './useHeartbeat';
 import { useReturnHome } from './useReturnHome';
 
 interface GameData {
@@ -38,10 +42,11 @@ interface GameData {
   events: GameEvent[];
 }
 
-export default function RunnerApp({ joinCode = null }: { joinCode?: string | null }) {
+export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { joinCode?: string | null; joinRole?: Role }) {
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [teamId, setTeamId] = useState(() => storage.getTeamId());
+  const [role, setRole] = useState<Role>(() => storage.getRole());
   const [data, setData] = useState<GameData | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
 
@@ -59,35 +64,42 @@ export default function RunnerApp({ joinCode = null }: { joinCode?: string | nul
     void loadTeams();
   }, [loadTeams]);
 
-  const chooseTeam = useCallback((t: Team | null) => {
+  const chooseTeam = useCallback((t: Team | null, r: Role = 'runner') => {
     storage.setTeamId(t?._id ?? null);
+    storage.setRole(t ? r : null);
     setTeamId(t?._id ?? null);
+    setRole(t ? r : 'runner');
   }, []);
 
-  // A scanned QR or a reload carries the code in the address: join without
-  // typing. Consumed once per code, so a team change made later on the code
-  // screen is not undone when the team list refreshes.
-  const consumedJoinCode = useRef<string | null>(null);
+  // A scanned QR or a reload carries the code and role in the address: join
+  // without typing. Consumed once per code and role, so a team change made
+  // later on the code screen is not undone when the team list refreshes, but
+  // navigating to a different role on the same code (join -> watch) still
+  // takes effect.
+  const consumedJoin = useRef<string | null>(null);
   useEffect(() => {
-    if (!joinCode || !teams || consumedJoinCode.current === joinCode) return;
-    consumedJoinCode.current = joinCode;
+    if (!joinCode || !teams) return;
+    const key = `${joinCode}:${joinRole}`;
+    if (consumedJoin.current === key) return;
+    consumedJoin.current = key;
     // No such team (a stale link, a typo in the address): the stored team
     // stands, and the address is corrected below.
     const match = teams.find(t => t.code === joinCode);
-    if (match) chooseTeam(match);
-  }, [joinCode, teams, chooseTeam]);
+    if (match) chooseTeam(match, joinRole);
+  }, [joinCode, joinRole, teams, chooseTeam]);
 
   const team = teams?.find(t => t._id === teamId) ?? null;
 
-  // The address follows the joined team, whether it came from the QR, the
-  // code screen or localStorage: a reload, or the tab reopened from history,
-  // rejoins from the address even when storage is blocked or cleared. Not
-  // before the team list is in, so a failed load keeps the scanned address.
-  // Also after a code was typed into the address and matched no team.
+  // The address follows the joined team and role, whether they came from the
+  // QR, the code screen or localStorage: a reload, or the tab reopened from
+  // history, rejoins from the address even when storage is blocked or
+  // cleared. Not before the team list is in, so a failed load keeps the
+  // scanned address. Also after a code was typed into the address and
+  // matched no team.
   useEffect(() => {
     if (!teams) return;
-    setJoinHash(team?.code ?? null);
-  }, [teams, team?.code, joinCode]);
+    setJoinHash(team?.code ?? null, role);
+  }, [teams, team?.code, role, joinCode]);
 
   const gameId = team?.gameId ?? null;
   // Keyed on ids, not the team object: a team update (start, photo) must not
@@ -136,12 +148,7 @@ export default function RunnerApp({ joinCode = null }: { joinCode?: string | nul
   if (!teams) return <FullScreenMessage title={da.loading} />;
 
   if (!team) {
-    return (
-      <CodeScreen
-        teams={teams}
-        onJoin={chooseTeam}
-      />
-    );
+    return <CodeScreen teams={teams} initialRole={joinRole} onJoin={chooseTeam} />;
   }
 
   if (dataError && !data) {
@@ -168,6 +175,20 @@ export default function RunnerApp({ joinCode = null }: { joinCode?: string | nul
           </button>
         </div>
       </FullScreenMessage>
+    );
+  }
+
+  if (role === 'spectator') {
+    return (
+      <SpectatorGame
+        key={`watch-${team._id}`}
+        team={team}
+        settings={withDefaults(settings)}
+        pellets={pellets}
+        captures={captures}
+        events={events}
+        onLeaveTeam={() => chooseTeam(null)}
+      />
     );
   }
 
@@ -208,6 +229,7 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
   const [briefed, setBriefed] = useState(state !== 'idle');
   const [photoSkipped, setPhotoSkipped] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [readyFlash, setReadyFlash] = useState(false);
@@ -232,6 +254,8 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
       if (pellet.kind === 'power') ghosts.powerEaten();
     },
   });
+  // Publish this phone's fix and ghosts for spectators while the team is out.
+  useHeartbeat({ active: state === 'running' || state === 'late', team, fix, ghosts: ghosts.ghosts });
   const late = team.startedAt ? latePenalty(team.startedAt, { ...rule, phaseMinutes: settings.phaseMinutes }, returnedAt, now) : 0;
   const points = Math.max(0, engine.points + ghosts.eventPoints - late);
   const homeDistanceM = fix && settings.start ? Math.round(haversineM(fix, settings.start)) : null;
@@ -247,13 +271,7 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
   const frightened = ghosts.ghosts ? isFrightened(ghosts.ghosts, now) : false;
   const ghostMode = !frightened ? 'normal' : ghosts.ghosts!.frightenedUntilMs - now < 5000 ? 'flashing' : 'frightened';
   const shielded = (ghosts.ghosts?.immuneUntilMs ?? 0) > now;
-  // Dobbelt left: from the most recent double pellet eaten within the window.
-  const doubleMs = Math.max(
-    0,
-    ...pellets
-      .filter(p => p.kind === 'double' && engine.captureTimes.has(p._id))
-      .map(p => Date.parse(engine.captureTimes.get(p._id)!) + settings.doubleSeconds * 1000 - now),
-  );
+  const doubleMs = doubleRemainingMs(engine.captureTimes, pellets, settings.doubleSeconds, now);
 
   const start = async () => {
     setStarting(true);
@@ -312,6 +330,9 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
             {starting ? da.starting : da.pressStart}
           </ArcadeButton>
           <div className="flex gap-4 text-xs text-gray-500">
+            <button onClick={() => setQrOpen(true)} className="underline">
+              {da.addSpectator}
+            </button>
             <button onClick={() => setRulesOpen(true)} className="underline">
               {da.showRules}
             </button>
@@ -358,7 +379,27 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
         />
       )}
 
-      {rulesOpen && <Briefing overlay teamName={team.name} settings={settings} pellets={pellets} onDone={() => setRulesOpen(false)} />}
+      {rulesOpen && (
+        <Briefing
+          overlay
+          teamName={team.name}
+          settings={settings}
+          pellets={pellets}
+          onDone={() => setRulesOpen(false)}
+          footer={
+            <button
+              onClick={() => {
+                setRulesOpen(false);
+                setQrOpen(true);
+              }}
+              className="underline text-xs text-gray-500"
+            >
+              {da.addSpectator}
+            </button>
+          }
+        />
+      )}
+      {qrOpen && <SpectatorQr team={team} onClose={() => setQrOpen(false)} />}
     </div>
   );
 }

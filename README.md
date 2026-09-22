@@ -41,6 +41,14 @@ built: `ROADMAP.md`.
    *TRYK START*. The countdown starts
    the moment they tap. The phone eats pellets automatically when inside a
    pellet's radius; nobody taps anything.
+
+More people than the one holding the phone can follow along. The runner's
+phone has "Tilføj tilskuer" on its start screen and in the rules: it shows a
+QR for `#/watch/CODE`. A phone that scans it sees the same map, runner dot,
+ghosts, countdown and score, a couple of seconds behind, and does no tracking
+of its own. The admin's QR dialog can show the same code. Any number of
+spectators can watch one team.
+
 6. When the countdown ends the team must be back at the start point. If it is,
    the phone shows GAME OVER. If not, it switches to **LØB HJEM!** with a red
    line to the start and loses points for every step of seconds late until it
@@ -119,7 +127,7 @@ value before clicking the map.
 
 ## Storage
 
-Six cruttelut collections. `GET https://cruttelut.kaasfrich.dk/rest/<name>`
+Seven cruttelut collections. `GET https://cruttelut.kaasfrich.dk/rest/<name>`
 returns the whole collection; `?filter=<url-encoded Mongo query>` returns only
 the matching records. Captures and events grow all day, so the phone reads
 them by `teamId` and the admin poll by `gameId`. The small collections are
@@ -137,6 +145,12 @@ if needed) the first time it loads.
 | `ch2cpacman_pellets` | `name`, `lat`, `lng`, `radiusM`, `points`, `kind` (`normal`, `power`, `double`) |
 | `ch2cpacman_captures` | append-only: `teamId`, `pelletId`, `capturedAt`, `lat`, `lng`, `clientId` |
 | `ch2cpacman_events` | append-only: `teamId`, `type` (`ghost_caught`, `ghost_eaten`), `at`, `points`, `clientId` |
+| `ch2cpacman_heartbeats` | one per team, overwritten every 2 s while it runs: `teamId`, `fix` (`lat`, `lng`, `accuracyM`, `at` or null), `ghosts` (the runner phone's ghost state or null), `at` |
+
+Heartbeats are not part of the score. The runner's phone writes them so a
+spectator can draw the runner and the ghosts; a spectator only reads. A beat
+older than 8 s is shown as stale on the spectator's screen. Resetting or
+deleting a team removes its heartbeat.
 
 Team photos are files, not JSON: `PUT https://cruttelut.kaasfrich.dk/files/ch2cpacman_photos/<gameId>/<teamId>/start-<ts>.jpg`,
 shrunk to 1024 px JPEG in the browser first. The team record keeps the key in
@@ -189,3 +203,11 @@ for players only.
 - [ ] Dobbelt banner counts down and the next dot counts double
 - [ ] Countdown reaches zero: GAME OVER, no more captures
 - [ ] Admin Nulstil returns the phone to the rules screen on reload
+- [ ] Spectator: on the runner phone, tap "Tilføj tilskuer" and scan the QR with a
+  second phone. After Start, the second phone shows the runner dot and the
+  ghosts within a few seconds, and its score follows the runner's.
+- [ ] Spectator, phone gone quiet: lock the runner phone for 15 s. The spectator's
+  runner and ghosts fade and "SIDST SET FOR … S SIDEN" counts up. Unlock: it
+  snaps back.
+- [ ] Spectator, weak signal: cover the runner phone's GPS for 15 s. The
+  spectator shows SVAGT GPS-SIGNAL, not SIDST SET.

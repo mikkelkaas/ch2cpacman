@@ -25,6 +25,8 @@ interface Props {
   ghostBanner?: GhostBanner | null;
   /** The latest fix is too inaccurate to count. */
   weakSignal?: boolean;
+  /** Spectator only: milliseconds since the runner phone's last beat when it has gone quiet, else null. */
+  staleForMs?: number | null;
 }
 
 /** Score that counts up digit by digit, the arcade way. */
@@ -39,7 +41,7 @@ function useRollingNumber(target: number): number {
   return shown;
 }
 
-export default function Hud({ remainingMs, lateMs = 0, latePoints = 0, homeDistanceM = null, points, pendingCount, onShowRules, doubleMs = 0, danger = false, power = false, ghostBanner = null, weakSignal = false }: Props) {
+export default function Hud({ remainingMs, lateMs = 0, latePoints = 0, homeDistanceM = null, points, pendingCount, onShowRules, doubleMs = 0, danger = false, power = false, ghostBanner = null, weakSignal = false, staleForMs = null }: Props) {
   const shownPoints = useRollingNumber(points);
   const late = lateMs > 0;
   const low = late || (remainingMs > 0 && remainingMs < 60_000);
@@ -99,6 +101,7 @@ export default function Hud({ remainingMs, lateMs = 0, latePoints = 0, homeDista
         </div>
       )}
       <div className="absolute bottom-0 inset-x-0 z-[450] flex flex-col items-center gap-1 p-3 pointer-events-none">
+        {staleForMs !== null && <div className="font-arcade text-[9px] text-ghost-orange bg-black/80 px-2 py-1">{da.lastSeen(Math.round(staleForMs / 1000))}</div>}
         {weakSignal && <div className="font-arcade text-[9px] text-ghost-orange bg-black/80 px-2 py-1 blink">{da.weakSignal}</div>}
         {showWaiting && <div className="font-arcade text-[9px] text-ghost-orange bg-black/80 px-2 py-1">{da.waitingForNetwork}</div>}
         <div className="bg-black/80 border-2 border-maze px-4 py-2 text-center">

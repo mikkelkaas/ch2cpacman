@@ -73,6 +73,20 @@ export const da = {
   mute: 'Lyd fra',
   unmute: 'Lyd til',
 
+  // Spectator
+  spectator: 'TILSKUER',
+  spectatorHint: 'I kigger med på løberens telefon. Denne telefon sporer ikke.',
+  tapForSound: 'Tryk på skærmen for at slå lyden til',
+  waitingForStart: 'Venter på at holdet starter…',
+  waitingForRunner: 'VENTER PÅ LØBERENS TELEFON…',
+  lastSeen: (s: number) => `SIDST SET FOR ${s} S SIDEN`,
+  addSpectator: 'Tilføj tilskuer',
+  spectatorQrTitle: 'SCAN FOR AT KIGGE MED',
+  spectatorQrHint: 'Tilskueren ser kortet, spøgelserne og scoren, men sporer ikke.',
+  roleRunner: 'LØBER',
+  roleSpectator: 'TILSKUER',
+  roleQuestion: 'HVEM ER DENNE TELEFON?',
+
   // Admin
   admin: 'Admin',
   games: 'Spil',
@@ -160,6 +174,9 @@ export const da = {
   showQr: 'Vis QR',
   qrTitle: 'Scan for at deltage',
   qrOrType: (url: string) => `eller åbn ${url} og tast koden`,
+  qrForRunner: 'Løber',
+  qrForSpectator: 'Tilskuer',
+  qrSpectatorTitle: 'Scan for at kigge med',
   nextTeam: 'Næste hold',
   prevTeam: 'Forrige hold',
   print: 'Print',

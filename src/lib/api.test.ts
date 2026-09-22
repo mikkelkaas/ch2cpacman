@@ -63,4 +63,10 @@ describe('cruttelut client', () => {
     await expect(api.teams.list()).rejects.toBeInstanceOf(ApiError);
     await expect(api.teams.list()).rejects.toMatchObject({ status: 500 });
   });
+
+  it('has a heartbeat collection under the prefix', async () => {
+    const fetchMock = stubFetch(200, []);
+    await api.heartbeats.list({ teamId: 't1' });
+    expect(fetchMock.mock.calls[0][0]).toBe(`https://cruttelut.kaasfrich.dk/rest/ch2cpacman_heartbeats?filter=${encodeURIComponent('{"teamId":"t1"}')}`);
+  });
 });

@@ -1,3 +1,4 @@
+import type { Heartbeat } from './heartbeat';
 import type { Capture, Game, GameEvent, NewRecord, Pellet, Settings, Team } from './types';
 
 export const BASE = 'https://cruttelut.kaasfrich.dk/rest';
@@ -54,4 +55,5 @@ export const api = {
   pellets: collection<Pellet>(`${PREFIX}pellets`),
   captures: collection<Capture>(`${PREFIX}captures`),
   events: collection<GameEvent>(`${PREFIX}events`),
+  heartbeats: collection<Heartbeat>(`${PREFIX}heartbeats`),
 };
