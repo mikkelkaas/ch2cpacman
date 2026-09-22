@@ -17,6 +17,13 @@ describe('cruttelut client', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('https://cruttelut.kaasfrich.dk/rest/ch2cpacman_teams');
   });
 
+  it('sends a filter as URL-encoded JSON so the server returns only matching records', async () => {
+    const fetchMock = stubFetch(200, []);
+    await api.captures.list({ teamId: 't1' });
+    const url = fetchMock.mock.calls[0][0];
+    expect(url).toBe(`https://cruttelut.kaasfrich.dk/rest/ch2cpacman_captures?filter=${encodeURIComponent('{"teamId":"t1"}')}`);
+  });
+
   it('creates without sending an _id and rebuilds the record around the returned id', async () => {
     // cruttelut answers a bare `{ id }` on POST, not the stored document.
     const fetchMock = stubFetch(201, { id: 'new' });

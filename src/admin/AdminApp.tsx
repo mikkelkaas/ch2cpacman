@@ -52,11 +52,13 @@ export default function AdminApp({ gameId }: { gameId: string }) {
   }, [gameId]);
 
   const loadLive = useCallback(async () => {
-    const [teamList, captureList, eventList] = await Promise.all([api.teams.list(), api.captures.list(), api.events.list()]);
+    // Every team, so new codes stay unique across games; captures and events
+    // for this game only, since they grow all day and this runs every poll.
+    const [teamList, captureList, eventList] = await Promise.all([api.teams.list(), api.captures.list({ gameId }), api.events.list({ gameId })]);
     setAllCodes(teamList.map(t => t.code));
     setTeams(inGame(teamList, gameId));
-    setCaptures(inGame(captureList, gameId));
-    setEvents(inGame(eventList, gameId));
+    setCaptures(captureList);
+    setEvents(eventList);
   }, [gameId]);
 
   const staticPoll = usePolling(loadStatic, 60 * 60_000);

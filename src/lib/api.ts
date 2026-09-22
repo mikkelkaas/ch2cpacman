@@ -20,15 +20,19 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+/** A MongoDB query document, sent URL-encoded as `?filter=`. Equality is type-exact. */
+export type Filter = Record<string, unknown>;
+
 /**
- * cruttelut is a flat JSON store: whole-collection reads, no filtering, no
+ * cruttelut is a flat JSON store with Mongo-style `?filter=` reads and no
  * uniqueness. PUT must carry the full record, so `update` takes the record.
  */
 function collection<T extends { _id: string }>(name: string) {
   const url = `${BASE}/${name}`;
   return {
     name,
-    list: () => request<T[]>(url),
+    /** The whole collection, or only the records matching `filter`. */
+    list: (filter?: Filter) => request<T[]>(filter ? `${url}?filter=${encodeURIComponent(JSON.stringify(filter))}` : url),
     // POST answers `{ id }` only, not the stored record, so the record is
     // rebuilt from what was sent. Anything else the server returns wins.
     create: async (record: NewRecord<T>): Promise<T> => {

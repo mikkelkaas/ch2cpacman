@@ -119,8 +119,11 @@ value before clicking the map.
 
 ## Storage
 
-Four cruttelut collections. `GET https://cruttelut.kaasfrich.dk/rest/<name>`
-returns the whole collection.
+Six cruttelut collections. `GET https://cruttelut.kaasfrich.dk/rest/<name>`
+returns the whole collection; `?filter=<url-encoded Mongo query>` returns only
+the matching records. Captures and events grow all day, so the phone reads
+them by `teamId` and the admin poll by `gameId`. The small collections are
+still read whole and filtered in memory.
 
 Every record except games carries a `gameId`. Records from before games existed
 have none; the games page adopts them into the oldest game (creating "Spil 1"

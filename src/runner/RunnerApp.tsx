@@ -96,23 +96,24 @@ export default function RunnerApp({ joinCode = null }: { joinCode?: string | nul
 
   // Then the team's game: settings, pellets, and this team's captures and
   // events once, so a reload never resurrects eaten pellets or lost points.
+  // Captures and events grow all day, so the server filters them by team.
   const loadGame = useCallback(async () => {
     if (!loadTeamId) return;
     setDataError(null);
     try {
-      const [settingsList, pelletList, captureList, eventList] = await Promise.all([
+      const [settingsList, pelletList, captures, events] = await Promise.all([
         api.settings.list(),
         api.pellets.list(),
-        api.captures.list(),
-        api.events.list().catch(() => [] as GameEvent[]),
+        api.captures.list({ teamId: loadTeamId }),
+        api.events.list({ teamId: loadTeamId }).catch(() => [] as GameEvent[]),
       ]);
       const forGame = <T extends { gameId?: string }>(list: T[]) => (gameId ? list.filter(r => r.gameId === gameId) : list.filter(r => !r.gameId));
       const settings = forGame(settingsList)[0] ?? null;
       setData({
         settings: settings ?? { _id: '', phaseMinutes: 10, start: null },
         pellets: forGame(pelletList),
-        captures: captureList.filter(c => c.teamId === loadTeamId),
-        events: eventList.filter(e => e.teamId === loadTeamId),
+        captures,
+        events,
       });
     } catch (err) {
       setDataError(err instanceof Error ? err.message : String(err));
