@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ArcadeButton from '../components/ArcadeButton';
 import ArcadeTitle from '../components/ArcadeTitle';
 import ErrorBar from '../components/ErrorBar';
@@ -18,6 +18,7 @@ import { dedupeCaptures } from '../lib/score';
 import { GHOST_WARN_M, withDefaults } from '../lib/settings';
 import { sound } from '../lib/sound';
 import { photoUrl } from '../lib/files';
+import { setJoinHash } from '../lib/route';
 import { storage } from '../lib/storage';
 import type { Capture, GameEvent, GameSettings, Pellet, Settings, Team } from '../lib/types';
 import Briefing from './Briefing';
@@ -58,19 +59,36 @@ export default function RunnerApp({ joinCode = null }: { joinCode?: string | nul
     void loadTeams();
   }, [loadTeams]);
 
-  // A scanned QR carries the code in the address: join without typing, then
-  // drop it from the address so a later visit does not re-join.
+  const chooseTeam = useCallback((t: Team | null) => {
+    storage.setTeamId(t?._id ?? null);
+    setTeamId(t?._id ?? null);
+  }, []);
+
+  // A scanned QR or a reload carries the code in the address: join without
+  // typing. Consumed once per code, so a team change made later on the code
+  // screen is not undone when the team list refreshes.
+  const consumedJoinCode = useRef<string | null>(null);
   useEffect(() => {
-    if (!joinCode || !teams) return;
+    if (!joinCode || !teams || consumedJoinCode.current === joinCode) return;
+    consumedJoinCode.current = joinCode;
+    // No such team (a stale link, a typo in the address): the stored team
+    // stands, and the address is corrected below.
     const match = teams.find(t => t.code === joinCode);
-    if (match) {
-      storage.setTeamId(match._id);
-      setTeamId(match._id);
-    }
-    window.history.replaceState(null, '', `${window.location.pathname}#/`);
-  }, [joinCode, teams]);
+    if (match) chooseTeam(match);
+  }, [joinCode, teams, chooseTeam]);
 
   const team = teams?.find(t => t._id === teamId) ?? null;
+
+  // The address follows the joined team, whether it came from the QR, the
+  // code screen or localStorage: a reload, or the tab reopened from history,
+  // rejoins from the address even when storage is blocked or cleared. Not
+  // before the team list is in, so a failed load keeps the scanned address.
+  // Also after a code was typed into the address and matched no team.
+  useEffect(() => {
+    if (!teams) return;
+    setJoinHash(team?.code ?? null);
+  }, [teams, team?.code, joinCode]);
+
   const gameId = team?.gameId ?? null;
   // Keyed on ids, not the team object: a team update (start, photo) must not
   // reload the game and remount the screens.
@@ -120,10 +138,7 @@ export default function RunnerApp({ joinCode = null }: { joinCode?: string | nul
     return (
       <CodeScreen
         teams={teams}
-        onJoin={t => {
-          storage.setTeamId(t._id);
-          setTeamId(t._id);
-        }}
+        onJoin={chooseTeam}
       />
     );
   }
@@ -146,10 +161,7 @@ export default function RunnerApp({ joinCode = null }: { joinCode?: string | nul
         <div className="mt-4">
           <button
             className="underline text-gray-500 text-sm"
-            onClick={() => {
-              storage.setTeamId(null);
-              setTeamId(null);
-            }}
+            onClick={() => chooseTeam(null)}
           >
             {da.changeTeam}
           </button>
@@ -167,10 +179,7 @@ export default function RunnerApp({ joinCode = null }: { joinCode?: string | nul
       captures={captures}
       events={events}
       onTeamChange={updated => setTeams(list => (list ? list.map(t => (t._id === updated._id ? updated : t)) : list))}
-      onLeaveTeam={() => {
-        storage.setTeamId(null);
-        setTeamId(null);
-      }}
+      onLeaveTeam={() => chooseTeam(null)}
     />
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { joinUrl } from '../App';
+import { joinUrl } from '../lib/route';
 import { da } from '../i18n/da';
 import type { Team } from '../lib/types';
 import QrCode from './QrCode';
