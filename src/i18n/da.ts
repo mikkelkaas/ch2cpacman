@@ -80,6 +80,12 @@ export const da = {
   waitingForStart: 'Venter på at holdet starter…',
   waitingForRunner: 'VENTER PÅ LØBERENS TELEFON…',
   lastSeen: (s: number) => `SIDST SET FOR ${s} S SIDEN`,
+  addSpectator: 'Tilføj tilskuer',
+  spectatorQrTitle: 'SCAN FOR AT KIGGE MED',
+  spectatorQrHint: 'Tilskueren ser kortet, spøgelserne og scoren, men sporer ikke.',
+  roleRunner: 'LØBER',
+  roleSpectator: 'TILSKUER',
+  roleQuestion: 'HVEM ER DENNE TELEFON?',
 
   // Admin
   admin: 'Admin',

@@ -29,6 +29,7 @@ import Hud from './Hud';
 import PhotoScreen from './PhotoScreen';
 import RunnerMap from './RunnerMap';
 import SpectatorGame from './SpectatorGame';
+import SpectatorQr from './SpectatorQr';
 import { useCaptureEngine } from './useCaptureEngine';
 import { useGhosts } from './useGhosts';
 import { useHeartbeat } from './useHeartbeat';
@@ -143,12 +144,7 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
   if (!teams) return <FullScreenMessage title={da.loading} />;
 
   if (!team) {
-    return (
-      <CodeScreen
-        teams={teams}
-        onJoin={chooseTeam}
-      />
-    );
+    return <CodeScreen teams={teams} initialRole={joinRole} onJoin={chooseTeam} />;
   }
 
   if (dataError && !data) {
@@ -229,6 +225,7 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
   const [briefed, setBriefed] = useState(state !== 'idle');
   const [photoSkipped, setPhotoSkipped] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [readyFlash, setReadyFlash] = useState(false);
@@ -329,6 +326,9 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
             {starting ? da.starting : da.pressStart}
           </ArcadeButton>
           <div className="flex gap-4 text-xs text-gray-500">
+            <button onClick={() => setQrOpen(true)} className="underline">
+              {da.addSpectator}
+            </button>
             <button onClick={() => setRulesOpen(true)} className="underline">
               {da.showRules}
             </button>
@@ -375,7 +375,27 @@ function Game({ team, settings, pellets, captures, events, onTeamChange, onLeave
         />
       )}
 
-      {rulesOpen && <Briefing overlay teamName={team.name} settings={settings} pellets={pellets} onDone={() => setRulesOpen(false)} />}
+      {rulesOpen && (
+        <Briefing
+          overlay
+          teamName={team.name}
+          settings={settings}
+          pellets={pellets}
+          onDone={() => setRulesOpen(false)}
+          footer={
+            <button
+              onClick={() => {
+                setRulesOpen(false);
+                setQrOpen(true);
+              }}
+              className="underline text-xs text-gray-500"
+            >
+              {da.addSpectator}
+            </button>
+          }
+        />
+      )}
+      {qrOpen && <SpectatorQr team={team} onClose={() => setQrOpen(false)} />}
     </div>
   );
 }

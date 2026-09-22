@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import ArcadeButton from '../components/ArcadeButton';
 import ArcadeTitle from '../components/ArcadeTitle';
 import { da } from '../i18n/da';
@@ -11,9 +12,11 @@ interface Props {
   onDone: () => void;
   /** Overlay mode: shown over the map after the game has started. */
   overlay?: boolean;
+  /** Rendered under the close button. The runner puts the spectator link here. */
+  footer?: ReactNode;
 }
 
-export default function Briefing({ teamName, settings, pellets, onDone, overlay = false }: Props) {
+export default function Briefing({ teamName, settings, pellets, onDone, overlay = false, footer }: Props) {
   const rules = da.rules({
     minutes: settings.phaseMinutes,
     ghosts: settings.ghostCount > 0,
@@ -53,6 +56,7 @@ export default function Briefing({ teamName, settings, pellets, onDone, overlay 
       >
         {overlay ? da.close : da.next}
       </ArcadeButton>
+      {footer}
     </div>
   );
 }
