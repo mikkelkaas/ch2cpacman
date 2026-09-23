@@ -188,10 +188,25 @@ export default function SpectatorGame({ team: initialTeam, settings, pellets, ca
           photoUrl={team.photoKey ? photoUrl(team.photoKey) : null}
           late={score.late}
           homeInTime={rule.latePenaltyPerStep > 0 && !!team.returnedAt && score.late === 0}
+          onLeave={onLeaveTeam}
         />
       )}
 
-      {rulesOpen && <Briefing overlay teamName={team.name} settings={settings} pellets={pellets} onDone={() => setRulesOpen(false)} />}
+      {rulesOpen && (
+        <Briefing
+          overlay
+          teamName={team.name}
+          settings={settings}
+          pellets={pellets}
+          onDone={() => setRulesOpen(false)}
+          footer={
+            // Watching costs the team nothing, so a spectator may leave mid-run.
+            <button onClick={onLeaveTeam} className="underline text-xs text-gray-500">
+              {da.changeTeam}
+            </button>
+          }
+        />
+      )}
     </div>
   );
 }
