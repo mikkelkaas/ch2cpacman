@@ -12,9 +12,13 @@ interface Props {
   late?: number;
   /** The rule is on and the team made it home without losing anything. */
   homeInTime?: boolean;
+  /** Forget the team on this phone so a new team, or another game, can join. */
+  onLeave?: () => void;
+  /** Captures or events are still waiting to upload: leaving now is held back. */
+  uploading?: boolean;
 }
 
-export default function GameOver({ points, pelletCount, teamName, photoUrl = null, late = 0, homeInTime = false }: Props) {
+export default function GameOver({ points, pelletCount, teamName, photoUrl = null, late = 0, homeInTime = false, onLeave, uploading = false }: Props) {
   useEffect(() => {
     sound.gameOver();
   }, []);
@@ -34,6 +38,19 @@ export default function GameOver({ points, pelletCount, teamName, photoUrl = nul
         {late > 0 && <div className="text-ghost-red">{da.lateLine(late)}</div>}
         {homeInTime && <div className="text-ghost-cyan">{da.homeInTime}</div>}
         <div className="text-gray-400 text-sm mt-2">{da.wellPlayed}</div>
+        {onLeave &&
+          (uploading ? (
+            <div className="text-gray-500 text-xs mt-2">{da.leaveWaitingUpload}</div>
+          ) : (
+            <button
+              onClick={() => {
+                if (window.confirm(da.leaveGameConfirm)) onLeave();
+              }}
+              className="underline text-gray-500 text-xs mt-2"
+            >
+              {da.leaveGame}
+            </button>
+          ))}
       </div>
     </div>
   );

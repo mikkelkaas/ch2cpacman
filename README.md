@@ -54,7 +54,10 @@ spectators can watch one team.
    line to the start and loses points for every step of seconds late until it
    is inside the home radius or the penalty cap is reached. The phone stamps the
    return itself from GPS; if you see the patrol arrive first, click *Hjemme*
-   on the team. There is no bonus for being early.
+   on the team. There is no bonus for being early. *Forlad spillet* under the
+   score makes the phone forget the team (after a confirm, and only once all
+   points have uploaded), so the same phone can be handed to the next team or
+   used in another game. Before the start, *Skift hold* does the same.
 7. **Stilling** on the admin page refreshes every 10 seconds. Click a row to
    see which pellets a team ate.
 8. If a team needs to run again, *Nulstil* clears its start time, its return

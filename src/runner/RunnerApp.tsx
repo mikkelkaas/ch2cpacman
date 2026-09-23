@@ -11,7 +11,7 @@ import { api } from '../lib/api';
 import { haversineM } from '../lib/geo';
 import { latePenalty } from '../lib/late';
 import { lateMs, phaseState, remainingMs } from '../lib/phase';
-import { pending } from '../lib/queue';
+import { eventQueue, pending } from '../lib/queue';
 import { isUsableFix } from '../lib/fix';
 import { isFrightened } from '../lib/ghosts';
 import { restoredGhosts } from '../lib/heartbeat';
@@ -392,6 +392,8 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
           photoUrl={team.photoKey ? photoUrl(team.photoKey) : null}
           late={late}
           homeInTime={rule.latePenaltyPerStep > 0 && !!returnedAt && late === 0}
+          onLeave={onLeaveTeam}
+          uploading={engine.pendingCount > 0 || eventQueue.pending().length > 0}
         />
       )}
 
