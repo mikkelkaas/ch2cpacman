@@ -1,5 +1,8 @@
 import type { Role } from './route';
 
+/** The admin map's background: street map, Danish orthophoto, or worldwide satellite. */
+export type AdminBaseLayer = 'map' | 'aerial' | 'satellite';
+
 const TEAM_KEY = 'ch2cpacman.teamId';
 const ROLE_KEY = 'ch2cpacman.role';
 const MUTED_KEY = 'ch2cpacman.muted';
@@ -30,7 +33,9 @@ export const storage = {
   setRole: (role: Role | null) => set(ROLE_KEY, role),
   isMuted: () => get(MUTED_KEY) === '1',
   setMuted: (muted: boolean) => set(MUTED_KEY, muted ? '1' : '0'),
-  /** The admin map's background: the street map or aerial imagery. */
-  getAdminBaseLayer: (): 'map' | 'satellite' => (get(ADMIN_BASE_KEY) === 'satellite' ? 'satellite' : 'map'),
-  setAdminBaseLayer: (layer: 'map' | 'satellite') => set(ADMIN_BASE_KEY, layer),
+  getAdminBaseLayer: (): AdminBaseLayer => {
+    const value = get(ADMIN_BASE_KEY);
+    return value === 'aerial' || value === 'satellite' ? value : 'map';
+  },
+  setAdminBaseLayer: (layer: AdminBaseLayer) => set(ADMIN_BASE_KEY, layer),
 };

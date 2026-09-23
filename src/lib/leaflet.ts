@@ -1,5 +1,6 @@
 import L from 'leaflet';
 import { storage } from './storage';
+import type { AdminBaseLayer } from './storage';
 import type { LatLng, Pellet } from './types';
 
 /**
@@ -17,24 +18,41 @@ export function createDarkMap(container: HTMLElement, options: L.MapOptions = {}
   return map;
 }
 
-/** Esri's aerial imagery: no API key, attribution required. */
+/** Esri's aerial imagery: worldwide, no API key, attribution required, often years old. */
 export const SATELLITE_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 export const SATELLITE_ATTRIBUTION = 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community';
 
 /**
- * Admin map: ordinary OSM, no theme, with a toggle to aerial imagery for
+ * The Danish spring orthophoto from Dataforsyningen: flown every year, sharp
+ * down to zoom 20, Denmark only. The token is a free Dataforsyningen one and
+ * is meant to sit in client code.
+ */
+const DATAFORSYNINGEN_TOKEN = '42197a8167a47e19a7920e9cf36603ea';
+export const DK_ORTHO_TILES =
+  'https://api.dataforsyningen.dk/orto_foraar_webm_DAF?service=WMTS&request=GetTile&version=1.0.0&layer=orto_foraar_webm&style=default' +
+  `&format=image/jpeg&tileMatrixSet=DFD_GoogleMapsCompatible&tileMatrix={z}&tileRow={y}&tileCol={x}&token=${DATAFORSYNINGEN_TOKEN}`;
+export const DK_ORTHO_ATTRIBUTION = 'Ortofoto &copy; <a href="https://dataforsyningen.dk">Klimadatastyrelsen</a>';
+
+/**
+ * Admin map: ordinary OSM, no theme, with a toggle to aerial photos for
  * placing dots on paths and clearings the map does not show. The choice is
  * remembered in this browser.
  */
 export function createPlainMap(container: HTMLElement, options: L.MapOptions = {}): L.Map {
   const map = L.map(container, { zoomControl: true, attributionControl: true, ...options });
-  const layers = {
-    Kort: L.tileLayer(OSM_TILES, { attribution: TILE_ATTRIBUTION, maxZoom: 19 }),
-    Satellit: L.tileLayer(SATELLITE_TILES, { attribution: SATELLITE_ATTRIBUTION, maxZoom: 19 }),
+  const layers: Record<AdminBaseLayer, L.TileLayer> = {
+    map: L.tileLayer(OSM_TILES, { attribution: TILE_ATTRIBUTION, maxZoom: 19 }),
+    aerial: L.tileLayer(DK_ORTHO_TILES, { attribution: DK_ORTHO_ATTRIBUTION, maxZoom: 20 }),
+    satellite: L.tileLayer(SATELLITE_TILES, { attribution: SATELLITE_ATTRIBUTION, maxZoom: 19 }),
   };
-  (storage.getAdminBaseLayer() === 'satellite' ? layers.Satellit : layers.Kort).addTo(map);
-  L.control.layers(layers, undefined, { position: 'topright' }).addTo(map);
-  map.on('baselayerchange', e => storage.setAdminBaseLayer(e.layer === layers.Satellit ? 'satellite' : 'map'));
+  const labels: Record<AdminBaseLayer, string> = { map: 'Kort', aerial: 'Luftfoto (DK)', satellite: 'Satellit (verden)' };
+  layers[storage.getAdminBaseLayer()].addTo(map);
+  const byLabel = Object.fromEntries((Object.keys(layers) as AdminBaseLayer[]).map(k => [labels[k], layers[k]]));
+  L.control.layers(byLabel, undefined, { position: 'topright' }).addTo(map);
+  map.on('baselayerchange', e => {
+    const key = (Object.keys(layers) as AdminBaseLayer[]).find(k => layers[k] === e.layer);
+    if (key) storage.setAdminBaseLayer(key);
+  });
   return map;
 }
 
