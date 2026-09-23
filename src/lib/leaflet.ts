@@ -1,4 +1,5 @@
 import L from 'leaflet';
+import { storage } from './storage';
 import type { LatLng, Pellet } from './types';
 
 /**
@@ -16,10 +17,24 @@ export function createDarkMap(container: HTMLElement, options: L.MapOptions = {}
   return map;
 }
 
-/** Admin map: ordinary OSM, no theme. */
+/** Esri's aerial imagery: no API key, attribution required. */
+export const SATELLITE_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+export const SATELLITE_ATTRIBUTION = 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community';
+
+/**
+ * Admin map: ordinary OSM, no theme, with a toggle to aerial imagery for
+ * placing dots on paths and clearings the map does not show. The choice is
+ * remembered in this browser.
+ */
 export function createPlainMap(container: HTMLElement, options: L.MapOptions = {}): L.Map {
   const map = L.map(container, { zoomControl: true, attributionControl: true, ...options });
-  L.tileLayer(OSM_TILES, { attribution: TILE_ATTRIBUTION, maxZoom: 19 }).addTo(map);
+  const layers = {
+    Kort: L.tileLayer(OSM_TILES, { attribution: TILE_ATTRIBUTION, maxZoom: 19 }),
+    Satellit: L.tileLayer(SATELLITE_TILES, { attribution: SATELLITE_ATTRIBUTION, maxZoom: 19 }),
+  };
+  (storage.getAdminBaseLayer() === 'satellite' ? layers.Satellit : layers.Kort).addTo(map);
+  L.control.layers(layers, undefined, { position: 'topright' }).addTo(map);
+  map.on('baselayerchange', e => storage.setAdminBaseLayer(e.layer === layers.Satellit ? 'satellite' : 'map'));
   return map;
 }
 

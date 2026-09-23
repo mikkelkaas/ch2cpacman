@@ -25,6 +25,8 @@ built: `ROADMAP.md`.
 2. **Indstillinger**: set minutes per team (default 10). Click *Sæt startpunkt*,
    then click the map where the teams start. Pick a *Korttema* for the runner's
    map: Nat (dark inverted), Neon, Lys (plain), Amber or Grøn.
+   The layers button top right of the admin map switches to *Satellit*
+   imagery (remembered in that browser); the runner's map is unaffected.
 3. **Prikker**: set *Point for nye prikker*, then click the map once per dot of
    that value; change the number and continue with the next value. Drag a dot to
    move it; drag the map to pan. The list is sorted by distance from the start, so give the far ones more
