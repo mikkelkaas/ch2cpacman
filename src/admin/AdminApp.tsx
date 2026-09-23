@@ -132,10 +132,14 @@ export default function AdminApp({ gameId }: { gameId: string }) {
       setAllCodes(list => [...list, ...created.map(t => t.code)]);
     });
 
+  // Straight from the store, not the last poll: a phone may have uploaded
+  // captures since, and any left behind would stay eaten on the rerun.
   const deleteTeamCaptures = async (team: Team) => {
-    const mine = captures.filter(c => c.teamId === team._id);
-    const myEvents = events.filter(e => e.teamId === team._id);
-    const beats = await api.heartbeats.list({ teamId: team._id }).catch(() => []);
+    const [mine, myEvents, beats] = await Promise.all([
+      api.captures.list({ teamId: team._id }),
+      api.events.list({ teamId: team._id }),
+      api.heartbeats.list({ teamId: team._id }).catch(() => []),
+    ]);
     await Promise.all([
       ...mine.map(c => api.captures.remove(c._id)),
       ...myEvents.map(e => api.events.remove(e._id)),
@@ -145,16 +149,22 @@ export default function AdminApp({ gameId }: { gameId: string }) {
     setEvents(list => list.filter(e => e.teamId !== team._id));
   };
 
+  // PUT replaces the whole record, and the copy here can be a poll old: build
+  // every team write on the record as the store has it now.
+  const freshTeam = async (team: Team): Promise<Team> => (await api.teams.list({ _id: team._id }))[0] ?? team;
+
   const resetTeam = (team: Team) =>
     write(async () => {
       await deleteTeamCaptures(team);
-      const saved = await api.teams.update({ ...team, startedAt: null, returnedAt: null });
+      const saved = await api.teams.update({ ...(await freshTeam(team)), startedAt: null, returnedAt: null });
       setTeams(list => list.map(t => (t._id === saved._id ? saved : t)));
     });
 
   const markHome = (team: Team) =>
     write(async () => {
-      const saved = await api.teams.update({ ...team, returnedAt: new Date().toISOString() });
+      const current = await freshTeam(team);
+      // The phone may have stamped itself home since the last poll: keep that.
+      const saved = current.returnedAt ? current : await api.teams.update({ ...current, returnedAt: new Date().toISOString() });
       setTeams(list => list.map(t => (t._id === saved._id ? saved : t)));
     });
 

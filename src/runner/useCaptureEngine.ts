@@ -5,7 +5,7 @@ import { pelletsWithin } from '../lib/capture';
 import { isUsableFix } from '../lib/fix';
 import { drain, enqueue, pending } from '../lib/queue';
 import { sound } from '../lib/sound';
-import { dedupeCaptures, scoreTeam } from '../lib/score';
+import { dedupeCaptures, ofCurrentRun, scoreTeam } from '../lib/score';
 import type { Capture, GameSettings, Pellet, Team } from '../lib/types';
 
 const RETRY_MS = 5000;
@@ -40,8 +40,8 @@ export function useCaptureEngine({ active, fix, pellets, team, settings, initial
   // Capture times, so the Dobbelt multiplier on screen matches the scoreboard.
   const [captureTimes, setCaptureTimes] = useState<Map<string, string>>(() => {
     const m = new Map<string, string>();
-    for (const c of dedupeCaptures(initialCaptures)) if (c.teamId === team._id) m.set(c.pelletId, c.capturedAt);
-    for (const q of pending()) if (q.teamId === team._id && !m.has(q.pelletId)) m.set(q.pelletId, q.capturedAt);
+    for (const c of dedupeCaptures(ofCurrentRun(initialCaptures, team, c => c.capturedAt))) m.set(c.pelletId, c.capturedAt);
+    for (const q of ofCurrentRun(pending(), team, q => q.capturedAt)) if (!m.has(q.pelletId)) m.set(q.pelletId, q.capturedAt);
     return m;
   });
 

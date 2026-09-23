@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { captureTimesOf, dedupeCaptures, doubleRemainingMs, rankTeams, scoreTeam } from './score';
+import { captureTimesOf, dedupeCaptures, dedupeEvents, doubleRemainingMs, ofCurrentRun, rankTeams, scoreTeam } from './score';
 import type { Capture, Pellet, Team } from './types';
 // Dobbelt and ghost event tests below reuse these fixtures.
 
 const startedAt = '2026-09-20T10:00:00.000Z';
 const t0 = Date.parse(startedAt);
 const iso = (offsetMs: number) => new Date(t0 + offsetMs).toISOString();
-const settings = { phaseMinutes: 10 };
+// Late rule off: these fixtures never come home. Its own block below turns it on.
+const settings = { phaseMinutes: 10, latePenaltyPerStep: 0 };
 
 const team: Team = { _id: 't1', name: 'Ugler', code: 'ABCD', color: '#f00', createdAt: iso(-3600_000), startedAt };
 const other: Team = { ...team, _id: 't2', name: 'Ræve', code: 'EFGH' };
@@ -81,6 +82,13 @@ describe('score with Dobbelt and ghost events', () => {
     const floored = scoreTeam(team, [], all, settings, [ev('ghost_caught', -2, 70_000)]);
     expect(floored.points).toBe(0);
   });
+
+  it('counts an event stored twice under one clientId once', () => {
+    const caught = ev('ghost_caught', -2, 70_000);
+    const s = scoreTeam(team, [cap('t1', 'p2', 60_000)], all, settings, [caught, { ...caught, _id: 'dup' }]);
+    expect(s.caught).toBe(1);
+    expect(s.points).toBe(3);
+  });
 });
 
 describe('score with a late penalty', () => {
@@ -111,8 +119,12 @@ describe('score with a late penalty', () => {
     expect(scoreTeam({ ...team, returnedAt: iso(end + 25_000) }, caps, pellets, { ...late, lateStepS: 5 }, [], t0 + end + 60_000).late).toBe(4);
     expect(scoreTeam({ ...team, returnedAt: iso(end + 25_000) }, caps, pellets, late, [], t0 + end + 60_000).late).toBe(2);
   });
-  it('is off when the penalty is zero, as it is for old settings documents without it', () => {
+  it('is off when the penalty is zero', () => {
     expect(scoreTeam(team, caps, pellets, { ...settings, latePenaltyPerStep: 0 }, [], t0 + end + 60 * 60_000).points).toBe(6);
+  });
+  it('defaults to 1 point per step, capped at 10, when the settings document lacks the fields, like the phone', () => {
+    expect(scoreTeam({ ...team, returnedAt: iso(end + 25_000) }, caps, pellets, { phaseMinutes: 10 }, [], t0 + end + 60_000).late).toBe(2);
+    expect(scoreTeam(team, caps, pellets, { phaseMinutes: 10 }, [], t0 + end + 60 * 60_000).late).toBe(10);
   });
 });
 
@@ -141,5 +153,25 @@ describe('doubleRemainingMs', () => {
     const times = new Map([['d1', new Date(t0).toISOString()]]);
     expect(doubleRemainingMs(times, pellets, 60, t0 + 61_000)).toBe(0);
     expect(doubleRemainingMs(new Map(), pellets, 60, t0)).toBe(0);
+  });
+});
+
+describe('dedupeEvents', () => {
+  it('keeps the first record per clientId', () => {
+    const a = { _id: '1', clientId: 'x' };
+    expect(dedupeEvents([a, { _id: '2', clientId: 'x' }, { _id: '3', clientId: 'y' }]).map(e => e._id)).toEqual(['1', '3']);
+  });
+});
+
+describe('ofCurrentRun', () => {
+  it('keeps only this team\'s records stamped at or after the start', () => {
+    const before = cap('t1', 'p1', -60_000);
+    const atStart = cap('t1', 'p1', 0);
+    const after = cap('t1', 'p2', 60_000);
+    const otherTeam = cap('t2', 'p2', 60_000);
+    expect(ofCurrentRun([before, atStart, after, otherTeam], team, c => c.capturedAt)).toEqual([atStart, after]);
+  });
+  it('is empty before Start', () => {
+    expect(ofCurrentRun([cap('t1', 'p1', 0)], { ...team, startedAt: null }, c => c.capturedAt)).toEqual([]);
   });
 });

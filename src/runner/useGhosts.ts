@@ -6,6 +6,7 @@ import { haversineM } from '../lib/geo';
 import { frighten, initialGhosts, isFrightened, stepGhosts } from '../lib/ghosts';
 import type { GhostState } from '../lib/ghosts';
 import { eventQueue } from '../lib/queue';
+import { dedupeEvents, ofCurrentRun } from '../lib/score';
 import { GHOST_WARN_M } from '../lib/settings';
 import { sound } from '../lib/sound';
 import type { GameEvent, GameEventType, GameSettings, Pellet, Team } from '../lib/types';
@@ -38,11 +39,10 @@ export interface GhostBanner {
  */
 export function useGhosts({ active, fix, pellets, team, settings, initialEvents, restored = null }: Options) {
   const [state, setState] = useState<GhostState | null>(null);
-  const [eventPoints, setEventPoints] = useState(() => {
-    const seen = new Set(initialEvents.map(e => e.clientId));
-    const queued = eventQueue.pending().filter(e => e.teamId === team._id && !seen.has(e.clientId));
-    return [...initialEvents.filter(e => e.teamId === team._id), ...queued].reduce((sum, e) => sum + e.points, 0);
-  });
+  // Server and queued events of this run, each clientId once, the way the scoreboard counts them.
+  const [eventPoints, setEventPoints] = useState(() =>
+    dedupeEvents(ofCurrentRun([...initialEvents, ...eventQueue.pending()], team, e => e.at)).reduce((sum, e) => sum + e.points, 0),
+  );
   const [banner, setBanner] = useState<GhostBanner | null>(null);
   const [nearest, setNearest] = useState<number>(Infinity);
   const stateRef = useRef<GhostState | null>(null);

@@ -8,7 +8,7 @@ import { haversineM } from '../lib/geo';
 import { isFrightened } from '../lib/ghosts';
 import { isStale, staleForMs } from '../lib/heartbeat';
 import { lateMs, phaseState, remainingMs } from '../lib/phase';
-import { captureTimesOf, doubleRemainingMs, scoreTeam } from '../lib/score';
+import { captureTimesOf, doubleRemainingMs, ofCurrentRun, scoreTeam } from '../lib/score';
 import { GHOST_WARN_M } from '../lib/settings';
 import { sound } from '../lib/sound';
 import type { Capture, GameEvent, GameSettings, Pellet, Team } from '../lib/types';
@@ -63,7 +63,7 @@ export default function SpectatorGame({ team: initialTeam, settings, pellets, ca
 
   // Score exactly as the admin and the runner do, from timestamps.
   const score = scoreTeam(team, captures, pellets, settings, events, now);
-  const captureTimes = captureTimesOf(captures, team._id);
+  const captureTimes = captureTimesOf(ofCurrentRun(captures, team, c => c.capturedAt), team._id);
   const eatenIds = new Set(captureTimes.keys());
   const doubleMs = doubleRemainingMs(captureTimes, pellets, settings.doubleSeconds, now);
 

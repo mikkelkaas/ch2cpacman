@@ -43,4 +43,15 @@ describe('capture queue', () => {
     expect(pending().map(c => c.clientId)).toEqual(['b', 'c']);
     expect(post).toHaveBeenCalledTimes(2);
   });
+  it('joins a drain already running instead of posting the same record twice', async () => {
+    enqueue(qc('a'));
+    let release!: () => void;
+    const post = vi.fn(() => new Promise<void>(resolve => (release = resolve)));
+    const first = drain(post);
+    const second = drain(post);
+    release();
+    expect(await first).toEqual({ sent: 1, left: 0 });
+    expect(await second).toEqual({ sent: 1, left: 0 });
+    expect(post).toHaveBeenCalledTimes(1);
+  });
 });

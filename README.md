@@ -109,8 +109,10 @@ value before clicking the map.
   the cap.
 - Home is a usable GPS fix within *Hjemmeradius* (default 15 m) of the start.
   The phone writes `returnedAt` on the team; the leader can write it with
-  *Hjemme* under Hold when the phone is slow or dead. Whichever lands, the
-  penalty is computed from that timestamp on both the phone and the admin page.
+  *Hjemme* under Hold when the phone is slow or dead. When both stamp, the
+  earlier one stands; the phone also picks up the leader's stamp while it is
+  out. The penalty is computed from that timestamp on both the phone and the
+  admin page.
 - Setting the points per step to 0 turns the rule off: GAME OVER at zero as
   before.
 
@@ -157,8 +159,11 @@ shrunk to 1024 px JPEG in the browser first. The team record keeps the key in
 `photoKey`; the public GET address is the image URL. Deleting a team or a game
 deletes its photos. A test build uses the `ch2cpacman_test_photos` bucket.
 
-Scores are never stored; both pages compute them from captures. Duplicate
-captures of the same pellet by the same team are ignored, so retries are safe.
+Scores are never stored; both pages compute them from captures and events.
+Duplicate captures of the same pellet by the same team, and events stored twice
+under one `clientId`, are ignored, so retries are safe. The phone and the
+spectators only count captures and events stamped after the team's current
+`startedAt`, so anything from before a *Nulstil* that lands late is ignored.
 
 To wipe everything before the event:
 `DELETE https://cruttelut.kaasfrich.dk/rest/ch2cpacman_captures` (and likewise

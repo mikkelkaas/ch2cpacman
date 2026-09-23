@@ -6,7 +6,9 @@ export type QueuedEvent = NewRecord<GameEvent>;
 /**
  * A localStorage upload queue for append-only records identified by
  * `clientId`. Upload happens in order and stops at the first failure, so a
- * dead spot leaves the queue intact and ordered for the next attempt.
+ * dead spot leaves the queue intact and ordered for the next attempt. One
+ * drain at a time: a second call while one runs joins it, so two timers never
+ * POST the same record at once.
  */
 export function createQueue<T extends { clientId: string }>(key: string) {
   const read = (): T[] => {
@@ -24,6 +26,22 @@ export function createQueue<T extends { clientId: string }>(key: string) {
       // Storage full or blocked: the in-memory attempt below still runs.
     }
   };
+  let inFlight: Promise<{ sent: number; left: number }> | null = null;
+  const run = async (post: (record: T) => Promise<unknown>): Promise<{ sent: number; left: number }> => {
+    let sent = 0;
+    for (const record of read()) {
+      try {
+        await post(record);
+      } catch {
+        break;
+      }
+      sent += 1;
+      // Re-read before removing: a record enqueued while this one was in
+      // flight must survive. Writing back a stale snapshot used to drop it.
+      write(read().filter(r => r.clientId !== record.clientId));
+    }
+    return { sent, left: read().length };
+  };
   return {
     /** Records waiting to be uploaded, oldest first. */
     pending: (): T[] => read(),
@@ -33,20 +51,11 @@ export function createQueue<T extends { clientId: string }>(key: string) {
       queue.push(record);
       write(queue);
     },
-    async drain(post: (record: T) => Promise<unknown>): Promise<{ sent: number; left: number }> {
-      let sent = 0;
-      for (const record of read()) {
-        try {
-          await post(record);
-        } catch {
-          break;
-        }
-        sent += 1;
-        // Re-read before removing: a record enqueued while this one was in
-        // flight must survive. Writing back a stale snapshot used to drop it.
-        write(read().filter(r => r.clientId !== record.clientId));
-      }
-      return { sent, left: read().length };
+    drain(post: (record: T) => Promise<unknown>): Promise<{ sent: number; left: number }> {
+      inFlight ??= run(post).finally(() => {
+        inFlight = null;
+      });
+      return inFlight;
     },
   };
 }

@@ -14,6 +14,30 @@ export function dedupeCaptures(captures: readonly Capture[]): Capture[] {
   return [...best.values()];
 }
 
+/**
+ * One event per `clientId`. A retried or doubled POST can store the same
+ * event twice; it must not cost or earn its points twice.
+ */
+export function dedupeEvents<T extends { clientId: string }>(events: readonly T[]): T[] {
+  const seen = new Set<string>();
+  return events.filter(e => {
+    if (seen.has(e.clientId)) return false;
+    seen.add(e.clientId);
+    return true;
+  });
+}
+
+/**
+ * This team's records from its current run: none before Start, and nothing
+ * stamped before `startedAt`. A Nulstil can race a phone still uploading the
+ * old run; those stragglers must not show up as eaten on the next run.
+ */
+export function ofCurrentRun<T extends { teamId: string }>(records: readonly T[], team: Pick<Team, '_id' | 'startedAt'>, at: (r: T) => string): T[] {
+  if (!team.startedAt) return [];
+  const startMs = Date.parse(team.startedAt);
+  return records.filter(r => r.teamId === team._id && Date.parse(at(r)) >= startMs);
+}
+
 /** Pellet id to the earliest capture time for one team. What the phone's HUD needs. */
 export function captureTimesOf(captures: readonly Capture[], teamId: string): Map<string, string> {
   const m = new Map<string, string>();
@@ -94,7 +118,7 @@ export function scoreTeam(
     return { pellet, capturedAt: c.capturedAt, multiplier: doubled ? 2 : 1 };
   });
 
-  const own = events.filter(e => e.teamId === team._id && inWindow(e.at));
+  const own = dedupeEvents(events).filter(e => e.teamId === team._id && inWindow(e.at));
   const caught = own.filter(e => e.type === 'ghost_caught');
   const ghostsEaten = own.filter(e => e.type === 'ghost_eaten');
   const pelletPoints = scored.reduce((sum, s) => sum + s.pellet.points * s.multiplier, 0);
@@ -104,7 +128,7 @@ export function scoreTeam(
     {
       phaseMinutes: settings.phaseMinutes,
       lateStepS: settings.lateStepS ?? SETTINGS_DEFAULTS.lateStepS,
-      latePenaltyPerStep: settings.latePenaltyPerStep ?? 0,
+      latePenaltyPerStep: settings.latePenaltyPerStep ?? SETTINGS_DEFAULTS.latePenaltyPerStep,
       latePenaltyMax: settings.latePenaltyMax ?? SETTINGS_DEFAULTS.latePenaltyMax,
     },
     team.returnedAt,

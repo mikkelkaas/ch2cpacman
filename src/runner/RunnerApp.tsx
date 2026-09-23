@@ -16,7 +16,7 @@ import { isUsableFix } from '../lib/fix';
 import { isFrightened } from '../lib/ghosts';
 import { restoredGhosts } from '../lib/heartbeat';
 import type { Heartbeat } from '../lib/heartbeat';
-import { dedupeCaptures, doubleRemainingMs } from '../lib/score';
+import { doubleRemainingMs, ofCurrentRun } from '../lib/score';
 import { GHOST_WARN_M, withDefaults } from '../lib/settings';
 import { sound } from '../lib/sound';
 import { photoUrl } from '../lib/files';
@@ -117,9 +117,12 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
     if (!loadTeamId) return;
     setDataError(null);
     try {
+      // Only this game's settings and dots. Records from before games existed
+      // have no gameId to filter on, so that case still reads them all.
+      const byGame = gameId ? { gameId } : undefined;
       const [settingsList, pelletList, captures, events, beats] = await Promise.all([
-        api.settings.list(),
-        api.pellets.list(),
+        api.settings.list(byGame),
+        api.pellets.list(byGame),
         api.captures.list({ teamId: loadTeamId }),
         api.events.list({ teamId: loadTeamId }).catch(() => [] as GameEvent[]),
         api.heartbeats.list({ teamId: loadTeamId }).catch(() => [] as Heartbeat[]),
@@ -244,11 +247,12 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
   const [readyFlash, setReadyFlash] = useState(false);
   useWakeLock(state !== 'over');
 
-  const initialEatenIds = useMemo(() => {
-    const ids = new Set(dedupeCaptures(captures).map(c => c.pelletId));
-    for (const q of pending()) if (q.teamId === team._id) ids.add(q.pelletId);
-    return ids;
-  }, [captures, team._id]);
+  // This run only: captures from before a Nulstil that landed late must not
+  // leave pellets eaten on the rerun.
+  const initialEatenIds = useMemo(
+    () => new Set([...ofCurrentRun(captures, team, c => c.capturedAt), ...ofCurrentRun(pending(), team, q => q.capturedAt)].map(c => c.pelletId)),
+    [captures, team],
+  );
 
   // Continue the chase from this run's last beat: same positions, same speed
   // ramp, same power and immunity timers, instead of fresh ghosts on reload.
