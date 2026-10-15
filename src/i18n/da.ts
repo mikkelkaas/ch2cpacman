@@ -20,6 +20,7 @@ export const da = {
     { icon: 'ᗧ', text: 'Telefonen spiser prikken, når I er tæt nok på. I skal ikke trykke.' },
     { icon: '★', text: 'Jo længere væk, jo flere point.' },
     ...(s.ghosts ? [{ icon: '👻', text: `Spøgelser jager jer. Fanger de jer, mister I ${s.penalty} point. Løb!` }] : []),
+    ...(s.ghosts ? [{ icon: '🧱', text: 'Spøgelser går lige igennem huse, hegn og krat. I kan ikke gemme jer bag noget.' }] : []),
     ...(s.ghosts && s.hungry ? [{ icon: '🔥', text: 'Jo længere et spøgelse jager uden at fange jer, jo hurtigere bliver det.' }] : []),
     ...(s.ghosts && s.hasPower ? [{ icon: '◉', text: `Spis en stor prik, så bliver spøgelserne blå. Fang dem for ${s.bonus} point.` }] : []),
     ...(s.hasDouble ? [{ icon: '×2', text: 'Prikker med ×2 giver dobbelte point i ét minut.' }] : []),
