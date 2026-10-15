@@ -68,6 +68,11 @@ spectators can watch one team.
 8. If a team needs to run again, *Nulstil* clears its start time, its return
    and deletes its captures. *Slet* removes the team entirely.
 
+A pellet counts when a fix lands inside its radius, or when the straight line
+between two consecutive good fixes passes within it, so a team running through
+a pellet between fixes still eats it. The line is only drawn for fixes at most
+10 s apart and no faster than 7 m/s between them, so a GPS jump eats nothing.
+
 Fixes worse than 30 m are shown but not trusted: no pellet is eaten and no
 ghost catches on them, and the HUD says "SVAGT GPS-SIGNAL".
 

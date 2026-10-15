@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Fix } from '../hooks/useGeolocation';
 import { api } from '../lib/api';
-import { pelletsWithin } from '../lib/capture';
+import { pelletsAlong } from '../lib/capture';
 import { isUsableFix } from '../lib/fix';
 import { drain, enqueue, pending } from '../lib/queue';
 import { sound } from '../lib/sound';
@@ -24,7 +24,8 @@ interface Options {
 }
 
 /**
- * Eats every uneaten pellet within reach of each new fix, queues the capture
+ * Eats every uneaten pellet within reach of each new fix, or of the line run
+ * since the last good fix, queues the capture
  * locally first and uploads in the background. The phone's own score counts
  * queued captures, so a dead spot never costs points.
  */
@@ -37,6 +38,8 @@ export function useCaptureEngine({ active, fix, pellets, team, settings, initial
   const draining = useRef(false);
   const onEatenRef = useRef(onEaten);
   onEatenRef.current = onEaten;
+  /** The last usable fix of this run, the start of the line to the next one. */
+  const prevFixRef = useRef<Fix | null>(null);
   // Capture times, so the Dobbelt multiplier on screen matches the scoreboard.
   const [captureTimes, setCaptureTimes] = useState<Map<string, string>>(() => {
     const m = new Map<string, string>();
@@ -62,8 +65,16 @@ export function useCaptureEngine({ active, fix, pellets, team, settings, initial
   }, []);
 
   useEffect(() => {
-    if (!active || !fix || !isUsableFix(fix)) return;
-    const hits = pelletsWithin(fix, pellets, eatenRef.current);
+    if (!active) {
+      prevFixRef.current = null;
+      return;
+    }
+    if (!fix || !isUsableFix(fix)) return;
+    // A rerun for the same fix (the pellets changed) checks only the fix itself.
+    const prev = prevFixRef.current;
+    const fresh = !prev || fix.at > prev.at;
+    if (fresh) prevFixRef.current = fix;
+    const hits = pelletsAlong(fresh ? prev : null, fix, pellets, eatenRef.current);
     if (hits.length === 0) return;
     const next = new Set(eatenRef.current);
     const nowMs = Date.now();
