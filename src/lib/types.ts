@@ -23,6 +23,8 @@ export interface Settings extends GameScoped {
   start: LatLng | null;
   /** Colour treatment of the runner's map tiles. */
   mapTheme?: MapTheme;
+  /** Ask for a team photo before the start. */
+  teamPhoto?: boolean;
   /** 0 turns ghosts off. Older documents lack these fields; see withDefaults in settings.ts. */
   ghostCount?: number;
   ghostSpeedMps?: number;

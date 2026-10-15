@@ -30,7 +30,7 @@ export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Pro
   const speedField = (key: 'ghostSpeedMps' | 'ghostMaxSpeedMps', label: string) => (
     <NumberField key={key} label={label} value={Math.round(full[key] * KMH * 10) / 10} min={0.1} step={0.5} onCommit={value => void onSave({ ...settings, [key]: value / KMH })} />
   );
-  const numberField = (key: keyof Omit<GameSettings, '_id' | 'gameId' | 'start' | 'phaseMinutes' | 'mapTheme'>, label: string, min: number, step = 1) => (
+  const numberField = (key: keyof Omit<GameSettings, '_id' | 'gameId' | 'start' | 'phaseMinutes' | 'mapTheme' | 'teamPhoto'>, label: string, min: number, step = 1) => (
     <NumberField key={key} label={label} value={full[key]} min={min} step={step} onCommit={value => void onSave({ ...settings, [key]: value })} />
   );
 
@@ -68,6 +68,10 @@ export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Pro
             </option>
           ))}
         </select>
+      </label>
+      <label className="flex items-center justify-between gap-3 text-sm text-gray-700">
+        {da.teamPhotoSetting}
+        <input type="checkbox" checked={full.teamPhoto} onChange={e => void onSave({ ...settings, teamPhoto: e.target.checked })} className="w-4 h-4" />
       </label>
       <h3 className="text-xs font-semibold text-gray-500 uppercase pt-2">{da.ghostSettings}</h3>
       {numberField('ghostCount', da.ghostCount, 0)}

@@ -51,7 +51,7 @@ export const da = {
   uploadingPhoto: 'SENDER…',
   photoFailed: 'Kunne ikke sende fotoet. Prøv igen, eller spring over.',
   photo: 'Foto',
-  readyQuestion: 'Klar? Tiden starter, når I trykker.',
+  readyQuestion: 'Kig på kortet og læg en plan. Tiden starter først, når I trykker.',
   pressStart: 'TRYK START',
   starting: 'STARTER…',
   startFailed: 'Kunne ikke starte, prøv igen',
@@ -116,6 +116,7 @@ export const da = {
   kind: 'Type',
   kinds: { normal: 'Almindelig', power: 'Power', double: 'Dobbelt' } as Record<'normal' | 'power' | 'double', string>,
   mapTheme: 'Korttema',
+  teamPhotoSetting: 'Holdfoto før start',
   mapThemes: {
     nat: 'Nat (mørkt, inverteret)',
     neon: 'Neon (rød-lilla)',

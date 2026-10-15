@@ -107,7 +107,7 @@ export default function HelpButton() {
                 <li>Åbn løbersiden på telefonen (link øverst) og tast holdets kode.</li>
                 <li>
                   Holdet læser reglerne og trykker Videre. Så tager de et <b>holdfoto</b>, som kommer i stillingen her; de kan springe det
-                  over.
+                  over. Slå <i>Holdfoto før start</i> fra i Indstillinger for at fjerne trinnet.
                 </li>
                 <li>De kigger på kortet og planlægger.</li>
                 <li>

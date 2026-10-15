@@ -313,7 +313,7 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
   if (state === 'idle' && !briefed) {
     return <Briefing teamName={team.name} settings={settings} pellets={pellets} onDone={() => setBriefed(true)} />;
   }
-  if (state === 'idle' && !team.photoKey && !photoSkipped) {
+  if (state === 'idle' && settings.teamPhoto && !team.photoKey && !photoSkipped) {
     return <PhotoScreen team={team} onDone={onTeamChange} onSkip={() => setPhotoSkipped(true)} />;
   }
 

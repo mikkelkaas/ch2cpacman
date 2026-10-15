@@ -2,6 +2,7 @@ import type { GameSettings, Settings } from './types';
 
 export const SETTINGS_DEFAULTS = {
   mapTheme: 'nat' as const,
+  teamPhoto: true,
   ghostCount: 2,
   ghostSpeedMps: 1.5,
   ghostMaxSpeedMps: 4,

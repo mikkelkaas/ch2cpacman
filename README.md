@@ -24,7 +24,8 @@ built: `ROADMAP.md`.
    unique across all games, so a runner only ever types the code.
 2. **Indstillinger**: set minutes per team (default 10). Click *Sæt startpunkt*,
    then click the map where the teams start. Pick a *Korttema* for the runner's
-   map: Nat (dark inverted), Neon, Lys (plain), Amber or Grøn.
+   map: Nat (dark inverted), Neon, Lys (plain), Amber or Grøn. Untick
+   *Holdfoto før start* to skip the team photo step.
    The layers button top right of the admin map switches to *Luftfoto (DK)*,
    this year's Danish orthophoto from Dataforsyningen, or *Satellit (verden)*
    from Esri outside Denmark (remembered in that browser); the runner's map is
@@ -41,7 +42,7 @@ built: `ROADMAP.md`.
    patrols; scanning it joins the team without typing. *Print* in the header
    opens a sheet with one card per team and a station overview of all codes.
 5. Hand a patrol a phone with the runner page open. They type the code, read the
-   rules, tap *Videre*, take a team photo (or skip it), plan on the map, tap
+   rules, tap *Videre*, take a team photo (or skip it, if enabled), plan on the map, tap
    *TRYK START*. The countdown starts
    the moment they tap. The phone eats pellets automatically when inside a
    pellet's radius; nobody taps anything.
