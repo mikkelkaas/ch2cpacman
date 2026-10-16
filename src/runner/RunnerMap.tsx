@@ -49,10 +49,17 @@ export default function RunnerMap({ theme, pellets, eatenIds, start, fix, ghosts
     };
   }, []);
 
-  // Pellets: add new ones, animate eaten ones away.
+  // Pellets: add new ones, animate eaten ones away, drop ones no longer listed.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    const listed = new Set(pellets.map(p => p._id));
+    for (const [id, marker] of pelletLayers.current) {
+      if (listed.has(id)) continue;
+      marker.remove();
+      pelletLayers.current.delete(id);
+      eatenShown.current.delete(id);
+    }
     for (const pellet of pellets) {
       const eaten = eatenIds.has(pellet._id);
       const existing = pelletLayers.current.get(pellet._id);

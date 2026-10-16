@@ -114,8 +114,13 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
   // Then the team's game: settings, pellets, and this team's captures and
   // events once, so a reload never resurrects eaten pellets or lost points.
   // Captures and events grow all day, so the server filters them by team.
+  // The team (and so the game) can change while a load is in flight: a QR
+  // opened on a phone that remembers another team starts loading the old
+  // team's game first. Only the latest load may set the data.
+  const loadSeq = useRef(0);
   const loadGame = useCallback(async () => {
     if (!loadTeamId) return;
+    const seq = ++loadSeq.current;
     setDataError(null);
     try {
       // Only this game's settings and dots. Records from before games existed
@@ -130,6 +135,7 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
       ]);
       const forGame = <T extends { gameId?: string }>(list: T[]) => (gameId ? list.filter(r => r.gameId === gameId) : list.filter(r => !r.gameId));
       const settings = forGame(settingsList)[0] ?? null;
+      if (seq !== loadSeq.current) return;
       setData({
         settings: settings ?? { _id: '', phaseMinutes: 10, start: null },
         pellets: forGame(pelletList),
@@ -138,6 +144,7 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
         heartbeat: beats[0] ?? null,
       });
     } catch (err) {
+      if (seq !== loadSeq.current) return;
       setDataError(err instanceof Error ? err.message : String(err));
     }
   }, [loadTeamId, gameId]);
@@ -145,6 +152,10 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
   useEffect(() => {
     setData(null);
     void loadGame();
+    // Leaving the team also cancels its load.
+    return () => {
+      loadSeq.current++;
+    };
   }, [loadGame]);
 
   if (loadError && !teams) {
