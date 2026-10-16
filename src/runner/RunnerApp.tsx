@@ -6,7 +6,7 @@ import FullScreenMessage from '../components/FullScreenMessage';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useNow } from '../hooks/useNow';
 import { useWakeLock } from '../hooks/useWakeLock';
-import { da } from '../i18n/da';
+import { useT } from '../i18n/LangProvider';
 import { api } from '../lib/api';
 import { haversineM } from '../lib/geo';
 import { latePenalty } from '../lib/late';
@@ -47,6 +47,7 @@ interface GameData {
 }
 
 export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { joinCode?: string | null; joinRole?: Role }) {
+  const t = useT();
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [teamId, setTeamId] = useState(() => storage.getTeamId());
@@ -149,12 +150,12 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
   if (loadError && !teams) {
     return (
       <div className="min-h-full flex flex-col">
-        <ErrorBar message={da.fetchFailed} onRetry={loadTeams} />
-        <FullScreenMessage title={da.title} />
+        <ErrorBar message={t.fetchFailed} onRetry={loadTeams} />
+        <FullScreenMessage title={t.title} />
       </div>
     );
   }
-  if (!teams) return <FullScreenMessage title={da.loading} />;
+  if (!teams) return <FullScreenMessage title={t.loading} />;
 
   if (!team) {
     return <CodeScreen teams={teams} initialRole={joinRole} onJoin={chooseTeam} />;
@@ -163,24 +164,24 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
   if (dataError && !data) {
     return (
       <div className="min-h-full flex flex-col">
-        <ErrorBar message={da.fetchFailed} onRetry={loadGame} />
-        <FullScreenMessage title={da.title} />
+        <ErrorBar message={t.fetchFailed} onRetry={loadGame} />
+        <FullScreenMessage title={t.title} />
       </div>
     );
   }
-  if (!data) return <FullScreenMessage title={da.loading} />;
+  if (!data) return <FullScreenMessage title={t.loading} />;
 
   const { settings, pellets, captures, events, heartbeat } = data;
   if (!settings._id || !settings.start || pellets.length === 0) {
     return (
-      <FullScreenMessage title={da.notSetUp}>
-        {da.notSetUpHint}
+      <FullScreenMessage title={t.notSetUp}>
+        {t.notSetUpHint}
         <div className="mt-4">
           <button
             className="underline text-gray-500 text-sm"
             onClick={() => chooseTeam(null)}
           >
-            {da.changeTeam}
+            {t.changeTeam}
           </button>
         </div>
       </FullScreenMessage>
@@ -229,6 +230,7 @@ interface GameProps {
 }
 
 function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChange, onLeaveTeam }: GameProps) {
+  const t = useT();
   const now = useNow(250);
   const { fix, error: geoError } = useGeolocation();
   const rule = { lateStepS: settings.lateStepS, latePenaltyPerStep: settings.latePenaltyPerStep, latePenaltyMax: settings.latePenaltyMax };
@@ -300,14 +302,14 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
       window.setTimeout(() => setReadyFlash(false), 1500);
       onTeamChange(updated);
     } catch {
-      setStartError(da.startFailed);
+      setStartError(t.startFailed);
     } finally {
       setStarting(false);
     }
   };
 
   if (geoError === 'denied' || geoError === 'unavailable') {
-    return <FullScreenMessage title={da.locationDenied}>{da.locationDeniedHint}</FullScreenMessage>;
+    return <FullScreenMessage title={t.locationDenied}>{t.locationDeniedHint}</FullScreenMessage>;
   }
 
   if (state === 'idle' && !briefed) {
@@ -340,20 +342,20 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
             {team.photoKey && <img src={photoUrl(team.photoKey)} alt="" className="w-12 h-12 object-cover border-2 border-maze" />}
             <div className="font-arcade text-[10px] text-pellet">{team.name}</div>
           </div>
-          <p className="text-gray-200 text-center">{fix ? da.readyQuestion : da.locationWaiting}</p>
+          <p className="text-gray-200 text-center">{fix ? t.readyQuestion : t.locationWaiting}</p>
           {startError && <p className="font-arcade text-ghost-red text-xs">{startError}</p>}
           <ArcadeButton onClick={start} disabled={starting || !fix} className="w-full max-w-sm text-lg py-5 glow-maze">
-            {starting ? da.starting : da.pressStart}
+            {starting ? t.starting : t.pressStart}
           </ArcadeButton>
           <div className="flex gap-4 text-xs text-gray-500">
             <button onClick={() => setQrOpen(true)} className="underline">
-              {da.addSpectator}
+              {t.addSpectator}
             </button>
             <button onClick={() => setRulesOpen(true)} className="underline">
-              {da.showRules}
+              {t.showRules}
             </button>
             <button onClick={onLeaveTeam} className="underline">
-              {da.changeTeam}
+              {t.changeTeam}
             </button>
           </div>
         </div>
@@ -379,7 +381,7 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
       {readyFlash && (
         <div className="absolute inset-0 z-[600] flex items-center justify-center pointer-events-none">
           <ArcadeTitle size="xl" className="blink">
-            {da.ready}
+            {t.ready}
           </ArcadeTitle>
         </div>
       )}
@@ -412,7 +414,7 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
               }}
               className="underline text-xs text-gray-500"
             >
-              {da.addSpectator}
+              {t.addSpectator}
             </button>
           }
         />

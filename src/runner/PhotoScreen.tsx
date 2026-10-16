@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ArcadeButton from '../components/ArcadeButton';
 import ArcadeTitle from '../components/ArcadeTitle';
-import { da } from '../i18n/da';
+import { useT } from '../i18n/LangProvider';
 import { api } from '../lib/api';
 import { PHOTO_BUCKET, putFile, teamPhotoKey } from '../lib/files';
 import { shrinkImage } from '../lib/image';
@@ -21,6 +21,7 @@ interface Props {
  * a run.
  */
 export default function PhotoScreen({ team, onDone, onSkip }: Props) {
+  const t = useT();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [blob, setBlob] = useState<Blob | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -42,7 +43,7 @@ export default function PhotoScreen({ team, onDone, onSkip }: Props) {
       setBlob(await shrinkImage(file));
       sound.blip();
     } catch {
-      setError(da.photoFailed);
+      setError(t.photoFailed);
     } finally {
       setBusy(false);
     }
@@ -59,7 +60,7 @@ export default function PhotoScreen({ team, onDone, onSkip }: Props) {
       sound.blip();
       onDone(saved);
     } catch {
-      setError(da.photoFailed);
+      setError(t.photoFailed);
     } finally {
       setBusy(false);
     }
@@ -68,8 +69,8 @@ export default function PhotoScreen({ team, onDone, onSkip }: Props) {
   return (
     <div className="min-h-full flex flex-col items-center justify-center gap-5 p-6 scanlines relative">
       <p className="font-arcade text-pellet text-[10px]">{team.name}</p>
-      <ArcadeTitle>{da.photoTitle}</ArcadeTitle>
-      <p className="text-gray-200 text-center max-w-sm">{da.photoHint}</p>
+      <ArcadeTitle>{t.photoTitle}</ArcadeTitle>
+      <p className="text-gray-200 text-center max-w-sm">{t.photoHint}</p>
       <input
         ref={inputRef}
         type="file"
@@ -86,21 +87,21 @@ export default function PhotoScreen({ team, onDone, onSkip }: Props) {
       <div className="flex flex-col gap-3 w-full max-w-sm">
         {!blob && (
           <ArcadeButton onClick={() => inputRef.current?.click()} disabled={busy} className="w-full py-4">
-            {da.takePhoto}
+            {t.takePhoto}
           </ArcadeButton>
         )}
         {blob && (
           <>
             <ArcadeButton onClick={upload} disabled={busy} className="w-full py-4">
-              {busy ? da.uploadingPhoto : da.usePhoto}
+              {busy ? t.uploadingPhoto : t.usePhoto}
             </ArcadeButton>
             <ArcadeButton variant="ghost" onClick={() => inputRef.current?.click()} disabled={busy} className="w-full">
-              {da.retakePhoto}
+              {t.retakePhoto}
             </ArcadeButton>
           </>
         )}
         <button onClick={onSkip} className="text-gray-500 underline text-sm" disabled={busy}>
-          {da.skipPhoto}
+          {t.skipPhoto}
         </button>
       </div>
     </div>

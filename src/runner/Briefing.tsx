@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import ArcadeButton from '../components/ArcadeButton';
 import ArcadeTitle from '../components/ArcadeTitle';
-import { da } from '../i18n/da';
+import LanguageSwitch from '../components/LanguageSwitch';
+import { useT } from '../i18n/LangProvider';
 import { sound } from '../lib/sound';
 import type { GameSettings, Pellet } from '../lib/types';
 
@@ -17,7 +18,8 @@ interface Props {
 }
 
 export default function Briefing({ teamName, settings, pellets, onDone, overlay = false, footer }: Props) {
-  const rules = da.rules({
+  const t = useT();
+  const rules = t.rules({
     minutes: settings.phaseMinutes,
     ghosts: settings.ghostCount > 0,
     hungry: settings.ghostMaxSpeedMps > settings.ghostSpeedMps,
@@ -31,10 +33,11 @@ export default function Briefing({ teamName, settings, pellets, onDone, overlay 
   });
   return (
     <div className={`${overlay ? 'absolute inset-0 z-[500] bg-black/95' : 'min-h-full'} flex flex-col items-center justify-center gap-6 p-6 overflow-y-auto scanlines`}>
-      <p className="font-arcade text-pellet text-[10px]">{da.yourTeam}</p>
+      <LanguageSwitch />
+      <p className="font-arcade text-pellet text-[10px]">{t.yourTeam}</p>
       <ArcadeTitle>{teamName}</ArcadeTitle>
       <h2 className="font-arcade text-maze text-sm sm:text-base mt-2" style={{ color: '#5c5cff' }}>
-        {da.howToPlay}
+        {t.howToPlay}
       </h2>
       <ol className="flex flex-col gap-4 w-full max-w-md">
         {rules.map((rule, i) => (
@@ -54,7 +57,7 @@ export default function Briefing({ teamName, settings, pellets, onDone, overlay 
         }}
         className="w-full max-w-md mt-2"
       >
-        {overlay ? da.close : da.next}
+        {overlay ? t.close : t.next}
       </ArcadeButton>
       {footer}
     </div>

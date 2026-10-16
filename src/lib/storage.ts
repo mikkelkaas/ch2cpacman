@@ -1,3 +1,4 @@
+import type { Lang } from '../i18n/lang';
 import type { Role } from './route';
 
 /** The admin map's background: street map, Danish orthophoto, or worldwide satellite. */
@@ -7,6 +8,7 @@ const TEAM_KEY = 'ch2cpacman.teamId';
 const ROLE_KEY = 'ch2cpacman.role';
 const MUTED_KEY = 'ch2cpacman.muted';
 const ADMIN_BASE_KEY = 'ch2cpacman.adminBaseLayer';
+const LANG_KEY = 'ch2cpacman.lang';
 
 function get(key: string): string | null {
   try {
@@ -38,4 +40,7 @@ export const storage = {
     return value === 'aerial' || value === 'satellite' ? value : 'map';
   },
   setAdminBaseLayer: (layer: AdminBaseLayer) => set(ADMIN_BASE_KEY, layer),
+  /** The player's chosen language as stored; `pickLang` validates it. */
+  getLang: () => get(LANG_KEY),
+  setLang: (lang: Lang) => set(LANG_KEY, lang),
 };

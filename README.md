@@ -47,6 +47,13 @@ built: `ROADMAP.md`.
    the moment they tap. The phone eats pellets automatically when inside a
    pellet's radius; nobody taps anything.
 
+The player screens come in Danish, English and Norwegian (Bokmål). The
+**DA · EN · NO** switch sits on the code screen, the rules and the spectator's
+waiting screen. A phone starts in its own language (anything other than Danish
+or Norwegian gets English) and remembers a choice made on the switch. The admin
+page is Danish only. The text lives in `src/i18n/player/`; the Danish file sets
+the shape, so the build fails if a translation misses a string.
+
 More people than the one holding the phone can follow along. The runner's
 phone has "Tilføj tilskuer" on its start screen and in the rules: it shows a
 QR for `#/watch/CODE`. A phone that scans it sees the same map, runner dot,

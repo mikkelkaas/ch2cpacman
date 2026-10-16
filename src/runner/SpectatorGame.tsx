@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import ErrorBar from '../components/ErrorBar';
+import LanguageSwitch from '../components/LanguageSwitch';
 import { useNow } from '../hooks/useNow';
 import { useWakeLock } from '../hooks/useWakeLock';
-import { da } from '../i18n/da';
+import { useT } from '../i18n/LangProvider';
 import { photoUrl } from '../lib/files';
 import { haversineM } from '../lib/geo';
 import { isFrightened } from '../lib/ghosts';
@@ -34,6 +35,7 @@ interface Props {
  * phone's heartbeat for the runner dot and the ghosts. Reads only.
  */
 export default function SpectatorGame({ team: initialTeam, settings, pellets, captures: initialCaptures, events: initialEvents, onLeaveTeam }: Props) {
+  const t = useT();
   const now = useNow(250);
   // Stop polling once the game is over; a one-poll lag before this takes
   // effect is fine, so the flag is derived from the previous render's team.
@@ -130,7 +132,7 @@ export default function SpectatorGame({ team: initialTeam, settings, pellets, ca
 
       {error && (
         <div className="absolute top-0 inset-x-0 z-[470]">
-          <ErrorBar message={da.fetchFailed} onRetry={() => void retry()} />
+          <ErrorBar message={t.fetchFailed} onRetry={() => void retry()} />
         </div>
       )}
 
@@ -140,16 +142,17 @@ export default function SpectatorGame({ team: initialTeam, settings, pellets, ca
             {team.photoKey && <img src={photoUrl(team.photoKey)} alt="" className="w-12 h-12 object-cover border-2 border-maze" />}
             <div className="font-arcade text-[10px] text-pellet">{team.name}</div>
           </div>
-          <div className="font-arcade text-xs text-ghost-cyan">{da.spectator}</div>
-          <p className="text-gray-200 text-center">{da.waitingForStart}</p>
-          <p className="text-gray-500 text-center text-sm">{da.spectatorHint}</p>
-          <p className="text-gray-500 text-center text-sm">{da.tapForSound}</p>
+          <div className="font-arcade text-xs text-ghost-cyan">{t.spectator}</div>
+          <p className="text-gray-200 text-center">{t.waitingForStart}</p>
+          <p className="text-gray-500 text-center text-sm">{t.spectatorHint}</p>
+          <p className="text-gray-500 text-center text-sm">{t.tapForSound}</p>
+          <LanguageSwitch />
           <div className="flex gap-4 text-xs text-gray-500">
             <button onClick={() => setRulesOpen(true)} className="underline">
-              {da.showRules}
+              {t.showRules}
             </button>
             <button onClick={onLeaveTeam} className="underline">
-              {da.changeTeam}
+              {t.changeTeam}
             </button>
           </div>
         </div>
@@ -174,7 +177,7 @@ export default function SpectatorGame({ team: initialTeam, settings, pellets, ca
           />
           {!heartbeat && (
             <div className="absolute inset-x-0 top-1/2 z-[460] flex justify-center pointer-events-none">
-              <div className="font-arcade text-[10px] text-ghost-orange bg-black/80 px-3 py-2 blink">{da.waitingForRunner}</div>
+              <div className="font-arcade text-[10px] text-ghost-orange bg-black/80 px-3 py-2 blink">{t.waitingForRunner}</div>
             </div>
           )}
         </>
@@ -202,7 +205,7 @@ export default function SpectatorGame({ team: initialTeam, settings, pellets, ca
           footer={
             // Watching costs the team nothing, so a spectator may leave mid-run.
             <button onClick={onLeaveTeam} className="underline text-xs text-gray-500">
-              {da.changeTeam}
+              {t.changeTeam}
             </button>
           }
         />

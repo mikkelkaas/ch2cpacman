@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import RunnerApp from './runner/RunnerApp';
 import AdminApp from './admin/AdminApp';
 import GamesPage from './admin/GamesPage';
+import { LangProvider } from './i18n/LangProvider';
 import PrintPage from './admin/PrintPage';
 import { joinCodeFromHash } from './lib/route';
 import type { Role } from './lib/route';
@@ -38,5 +39,9 @@ export default function App() {
   if (route.kind === 'admin') return <AdminApp key={route.gameId} gameId={route.gameId} />;
   if (route.kind === 'print') return <PrintPage gameId={route.gameId} />;
   if (route.kind === 'games') return <GamesPage />;
-  return <RunnerApp joinCode={route.joinCode} joinRole={route.joinRole} />;
+  return (
+    <LangProvider>
+      <RunnerApp joinCode={route.joinCode} joinRole={route.joinRole} />
+    </LangProvider>
+  );
 }

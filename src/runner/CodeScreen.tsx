@@ -2,7 +2,8 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import ArcadeButton from '../components/ArcadeButton';
 import ArcadeTitle from '../components/ArcadeTitle';
-import { da } from '../i18n/da';
+import LanguageSwitch from '../components/LanguageSwitch';
+import { useT } from '../i18n/LangProvider';
 import type { Role } from '../lib/route';
 import { sound } from '../lib/sound';
 import { CODE_LENGTH, normalizeCode } from '../lib/teamCode';
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default function CodeScreen({ teams, initialRole = 'runner', onJoin }: Props) {
+  const t = useT();
   const [code, setCode] = useState('');
   const [role, setRole] = useState<Role>(initialRole);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +27,7 @@ export default function CodeScreen({ teams, initialRole = 'runner', onJoin }: Pr
     sound.unlock();
     const team = teams.find(t => t.code === code);
     if (!team) {
-      setError(da.unknownCode);
+      setError(t.unknownCode);
       return;
     }
     sound.blip();
@@ -45,10 +47,11 @@ export default function CodeScreen({ teams, initialRole = 'runner', onJoin }: Pr
 
   return (
     <div className="min-h-full flex flex-col items-center justify-center gap-8 p-6 scanlines relative">
-      <ArcadeTitle size="xl">{da.title}</ArcadeTitle>
+      <LanguageSwitch className="absolute top-3 right-3" />
+      <ArcadeTitle size="xl">{t.title}</ArcadeTitle>
       <form onSubmit={submit} className="flex flex-col items-center gap-5 w-full max-w-xs">
         <label className="font-arcade text-pellet text-xs" htmlFor="code">
-          {da.enterCode}
+          {t.enterCode}
         </label>
         <input
           id="code"
@@ -62,19 +65,19 @@ export default function CodeScreen({ teams, initialRole = 'runner', onJoin }: Pr
             setCode(normalizeCode(e.target.value).slice(0, CODE_LENGTH));
             setError(null);
           }}
-          placeholder={da.codePlaceholder}
+          placeholder={t.codePlaceholder}
           className="font-arcade text-3xl tracking-[0.5em] text-center w-full bg-black text-pac border-4 border-maze py-4 outline-none focus:glow-maze placeholder:text-blue-900"
         />
         <div className="w-full flex flex-col gap-2">
-          <div className="font-arcade text-pellet text-[9px] text-center">{da.roleQuestion}</div>
+          <div className="font-arcade text-pellet text-[9px] text-center">{t.roleQuestion}</div>
           <div className="flex gap-2 w-full">
-            {roleButton('runner', da.roleRunner)}
-            {roleButton('spectator', da.roleSpectator)}
+            {roleButton('runner', t.roleRunner)}
+            {roleButton('spectator', t.roleSpectator)}
           </div>
         </div>
         {error && <p className="font-arcade text-ghost-red text-xs blink">{error}</p>}
         <ArcadeButton type="submit" disabled={code.length !== CODE_LENGTH} className="w-full">
-          {da.join}
+          {t.join}
         </ArcadeButton>
       </form>
     </div>

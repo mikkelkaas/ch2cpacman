@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import ArcadeTitle from '../components/ArcadeTitle';
-import { da } from '../i18n/da';
+import { useT } from '../i18n/LangProvider';
 import { sound } from '../lib/sound';
 
 interface Props {
@@ -19,6 +19,7 @@ interface Props {
 }
 
 export default function GameOver({ points, pelletCount, teamName, photoUrl = null, late = 0, homeInTime = false, onLeave, uploading = false }: Props) {
+  const t = useT();
   useEffect(() => {
     sound.gameOver();
   }, []);
@@ -26,29 +27,29 @@ export default function GameOver({ points, pelletCount, teamName, photoUrl = nul
     <div className="absolute inset-0 z-[500] flex flex-col items-center justify-center gap-6 p-6 text-center pointer-events-none">
       <div className="drop-in">
         <ArcadeTitle size="xl" className="text-ghost-red" >
-          <span style={{ color: '#ff0000', textShadow: '0 0 8px #ff0000' }}>{da.gameOver}</span>
+          <span style={{ color: '#ff0000', textShadow: '0 0 8px #ff0000' }}>{t.gameOver}</span>
         </ArcadeTitle>
       </div>
       <div className="bg-black/90 border-4 border-maze px-8 py-6 flex flex-col gap-3 drop-in pointer-events-auto items-center">
         {photoUrl && <img src={photoUrl} alt="" className="w-40 h-30 object-cover border-2 border-maze" />}
         <div className="font-arcade text-[10px] text-pellet">{teamName}</div>
-        <div className="font-arcade text-[10px] text-pellet">{da.finalScore}</div>
+        <div className="font-arcade text-[10px] text-pellet">{t.finalScore}</div>
         <div className="font-arcade text-5xl text-pac glow-pac tabular-nums">{String(points).padStart(4, '0')}</div>
-        <div className="text-gray-300">{da.pelletsEaten(pelletCount)}</div>
-        {late > 0 && <div className="text-ghost-red">{da.lateLine(late)}</div>}
-        {homeInTime && <div className="text-ghost-cyan">{da.homeInTime}</div>}
-        <div className="text-gray-400 text-sm mt-2">{da.wellPlayed}</div>
+        <div className="text-gray-300">{t.pelletsEaten(pelletCount)}</div>
+        {late > 0 && <div className="text-ghost-red">{t.lateLine(late)}</div>}
+        {homeInTime && <div className="text-ghost-cyan">{t.homeInTime}</div>}
+        <div className="text-gray-400 text-sm mt-2">{t.wellPlayed}</div>
         {onLeave &&
           (uploading ? (
-            <div className="text-gray-500 text-xs mt-2">{da.leaveWaitingUpload}</div>
+            <div className="text-gray-500 text-xs mt-2">{t.leaveWaitingUpload}</div>
           ) : (
             <button
               onClick={() => {
-                if (window.confirm(da.leaveGameConfirm)) onLeave();
+                if (window.confirm(t.leaveGameConfirm)) onLeave();
               }}
               className="underline text-gray-500 text-xs mt-2"
             >
-              {da.leaveGame}
+              {t.leaveGame}
             </button>
           ))}
       </div>

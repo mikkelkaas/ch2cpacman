@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { da } from '../i18n/da';
+import { useT } from '../i18n/LangProvider';
 import { sound } from '../lib/sound';
 
 export default function MuteToggle({ className = '' }: { className?: string }) {
+  const t = useT();
   const [muted, setMuted] = useState(sound.isMuted());
   const toggle = () => {
     const next = !muted;
@@ -16,7 +17,7 @@ export default function MuteToggle({ className = '' }: { className?: string }) {
   return (
     <button
       onClick={toggle}
-      aria-label={muted ? da.unmute : da.mute}
+      aria-label={muted ? t.unmute : t.mute}
       aria-pressed={muted}
       className={`font-arcade text-pac border-2 border-maze bg-black/80 px-2 py-1 text-sm ${className}`}
     >
