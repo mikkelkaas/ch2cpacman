@@ -227,6 +227,9 @@ export default function AdminApp({ gameId }: { gameId: string }) {
           <a href="#/" className="text-blue-700 hover:underline">
             {da.runnerLink}
           </a>
+          <a href={`#/admin/${gameId}/postmandskab`} className="text-blue-700 hover:underline">
+            {da.leadersLink}
+          </a>
           <a href={`#/admin/${gameId}/print`} className="text-blue-700 hover:underline">
             {da.print}
           </a>

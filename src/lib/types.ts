@@ -45,6 +45,8 @@ export interface Settings extends GameScoped {
   latePenaltyPerStep?: number;
   /** The late penalty never exceeds this. */
   latePenaltyMax?: number;
+  /** Points are divided by this into the 0–20 the leaders enter in e-vent. */
+  eventDivisor?: number;
 }
 
 /** Filled-in settings, every optional field present. */
@@ -68,6 +70,8 @@ export interface Team extends GameScoped {
   returnedAt?: string | null;
   /** Key in the photo bucket of the team photo taken before the start. */
   photoKey?: string | null;
+  /** A leader ticked that the team's points are entered in e-vent. */
+  eventSubmitted?: boolean;
 }
 
 export interface Pellet extends GameScoped {

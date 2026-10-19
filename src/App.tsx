@@ -4,6 +4,7 @@ import AdminApp from './admin/AdminApp';
 import GamesPage from './admin/GamesPage';
 import { LangProvider } from './i18n/LangProvider';
 import PrintPage from './admin/PrintPage';
+import LeaderPage from './admin/LeaderPage';
 import { joinCodeFromHash } from './lib/route';
 import type { Role } from './lib/route';
 
@@ -11,17 +12,20 @@ type Route =
   | { kind: 'runner'; joinCode: string | null; joinRole: Role }
   | { kind: 'games' }
   | { kind: 'admin'; gameId: string }
-  | { kind: 'print'; gameId: string };
+  | { kind: 'print'; gameId: string }
+  | { kind: 'leaders'; gameId: string };
 
 function routeFromHash(): Route {
   const hash = window.location.hash;
   const join = joinCodeFromHash(hash);
   if (join) return { kind: 'runner', joinCode: join.code, joinRole: join.role };
-  const admin = hash.match(/^#\/admin(?:\/([^/]+))?(\/print)?/);
+  const admin = hash.match(/^#\/admin(?:\/([^/]+))?(?:\/(print|postmandskab))?/);
   if (!admin) return { kind: 'runner', joinCode: null, joinRole: 'runner' };
   if (!admin[1]) return { kind: 'games' };
   const gameId = decodeURIComponent(admin[1]);
-  return admin[2] ? { kind: 'print', gameId } : { kind: 'admin', gameId };
+  if (admin[2] === 'print') return { kind: 'print', gameId };
+  if (admin[2] === 'postmandskab') return { kind: 'leaders', gameId };
+  return { kind: 'admin', gameId };
 }
 
 function useHashRoute(): Route {
@@ -38,6 +42,7 @@ export default function App() {
   const route = useHashRoute();
   if (route.kind === 'admin') return <AdminApp key={route.gameId} gameId={route.gameId} />;
   if (route.kind === 'print') return <PrintPage gameId={route.gameId} />;
+  if (route.kind === 'leaders') return <LeaderPage key={route.gameId} gameId={route.gameId} />;
   if (route.kind === 'games') return <GamesPage />;
   return (
     <LangProvider>

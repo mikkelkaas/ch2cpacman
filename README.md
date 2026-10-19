@@ -13,6 +13,7 @@ Nothing to install: it is a static web page, hosted on GitHub Pages at
 - Runner: `https://mikkelkaas.github.io/ch2cpacman/`
 - Admin, list of games: `https://mikkelkaas.github.io/ch2cpacman/#/admin`
 - Admin, one game: `https://mikkelkaas.github.io/ch2cpacman/#/admin/<gameId>`
+- Postmandskab (the leaders at the post), one game: `https://mikkelkaas.github.io/ch2cpacman/#/admin/<gameId>/postmandskab`
 
 Design: `docs/superpowers/specs/2026-09-17-ch2cpacman-design.md`. Ideas not yet
 built: `ROADMAP.md`.
@@ -74,6 +75,15 @@ spectators can watch one team.
    see which pellets a team ate.
 8. If a team needs to run again, *Nulstil* clears its start time, its return
    and deletes its captures. *Slet* removes the team entirely.
+9. **Postmandskab** in the admin header opens the page for the leaders who
+   welcome the teams, made for a phone; several leaders can have it open at
+   once. It has a card per team, filtered by *Ikke spillet*, *I gang*,
+   *Mangler e-vent*, *Færdig* or *Alle*, with *Vis QR* (the same full-screen QR
+   as the admin page), the score, and the 0–20 to enter in e-vent: points
+   divided by *Divider point med* under **Indstillinger** (default 5), rounded,
+   at most 20. Ticking *Sendt til e-vent* is saved on the team, so every leader
+   sees it, and moves the team from *Mangler e-vent* to *Færdig*. The page
+   refreshes every 5 seconds.
 
 A pellet counts when a fix lands inside its radius, or when the straight line
 between two consecutive good fixes passes within it, so a team running through

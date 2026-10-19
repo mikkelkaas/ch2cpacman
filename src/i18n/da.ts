@@ -106,6 +106,21 @@ export const da = {
   printCardHint: 'Scan koden eller åbn siden og tast holdkoden.',
   printNow: 'Udskriv',
   backToGame: 'Tilbage til spillet',
+  eventSettings: 'e-vent',
+  eventDivisor: 'Divider point med',
+  eventDivisorHint: (divisor: number, max: number) => `Point ÷ ${String(divisor).replace('.', ',')}, afrundet, højst ${max}.`,
+  leadersLink: 'Postmandskab',
+  leadersTitle: 'Postmandskab',
+  adminLink: 'Admin',
+  leaderStatus: { notPlayed: 'Ikke spillet', running: 'I gang', missingEvent: 'Mangler e-vent', done: 'Færdig' },
+  allTeams: 'Alle',
+  noTeamsHere: 'Ingen hold her.',
+  leaderRunning: (clock: string) => `I GANG · ${clock}`,
+  leaderLate: 'PÅ VEJ HJEM',
+  pointsSoFar: (n: number) => `${n} point indtil nu`,
+  gamePoints: (n: number) => `${n} point`,
+  eventOutOf: (max: number) => `/ ${max}`,
+  eventSubmitted: 'Sendt til e-vent',
 } as const;
 
 export function formatClock(iso: string | number): string {
