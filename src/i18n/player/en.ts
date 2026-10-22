@@ -18,6 +18,7 @@ export const playerEn: PlayerStrings = {
   rules: (s: RulesInput) => [
     { icon: '⏱', text: `You have ${s.minutes} minutes.` },
     { icon: '•', text: 'The map shows dots. Run to them.' },
+    { icon: '🗺', text: 'Before you start, you can see the map and the dots. Make a plan, the time only starts when you press START.' },
     { icon: 'ᗧ', text: 'The phone eats a dot when you are close enough. No need to tap anything.' },
     { icon: '★', text: 'The farther away, the more points.' },
     ...(s.ghosts ? [{ icon: '👻', text: `Ghosts are hunting you. If they catch you, you lose ${s.penalty} points. Run!` }] : []),

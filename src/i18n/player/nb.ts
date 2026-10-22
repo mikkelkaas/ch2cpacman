@@ -19,6 +19,7 @@ export const playerNb: PlayerStrings = {
   rules: (s: RulesInput) => [
     { icon: '⏱', text: `Dere har ${s.minutes} minutter.` },
     { icon: '•', text: 'Kartet viser prikker. Løp bort til dem.' },
+    { icon: '🗺', text: 'Før dere starter, kan dere se kartet og prikkene. Legg en plan, tiden starter først når dere trykker START.' },
     { icon: 'ᗧ', text: 'Telefonen spiser prikken når dere er nær nok. Dere trenger ikke trykke.' },
     { icon: '★', text: 'Jo lenger unna, jo flere poeng.' },
     ...(s.ghosts ? [{ icon: '👻', text: `Spøkelser jakter på dere. Blir dere tatt, mister dere ${s.penalty} poeng. Løp!` }] : []),
