@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { joinUrl } from '../lib/route';
 import { da } from '../i18n/da';
 import { api } from '../lib/api';
-import { inGame } from '../lib/games';
 import type { Game, Team } from '../lib/types';
 import QrCode from './QrCode';
 import { Button } from './ui';
@@ -18,11 +17,11 @@ export default function PrintPage({ gameId }: { gameId: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api.games.list(), api.teams.list()])
-      .then(([games, allTeams]) => {
+    Promise.all([api.games.list({ _id: gameId }), api.teams.list({ gameId })])
+      .then(([games, teams]) => {
         if (cancelled) return;
-        setGame(games.find(g => g._id === gameId) ?? null);
-        setTeams(inGame(allTeams, gameId).sort((a, b) => a.createdAt.localeCompare(b.createdAt)));
+        setGame(games[0] ?? null);
+        setTeams(teams.sort((a, b) => a.createdAt.localeCompare(b.createdAt)));
       })
       .catch(() => !cancelled && setError(true));
     return () => {

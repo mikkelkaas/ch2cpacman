@@ -6,7 +6,6 @@ import { api } from '../lib/api';
 import { rankTeams } from '../lib/score';
 import { generateTeamCode } from '../lib/teamCode';
 import { deleteFile, PHOTO_BUCKET } from '../lib/files';
-import { inGame } from '../lib/games';
 import { withDefaults } from '../lib/settings';
 import type { Capture, Game, GameEvent, LatLng, Pellet, PelletKind, Settings, Team } from '../lib/types';
 import AdminMap from './AdminMap';
@@ -30,7 +29,6 @@ export default function AdminApp({ gameId }: { gameId: string }) {
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [events, setEvents] = useState<GameEvent[]>([]);
   // Codes across every game: a runner's code must identify the game too.
-  const [allCodes, setAllCodes] = useState<string[]>([]);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [mode, setMode] = useState<MapMode>('idle');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -41,22 +39,19 @@ export default function AdminApp({ gameId }: { gameId: string }) {
   const now = useNow(1000);
 
   const loadStatic = useCallback(async () => {
-    const [gameList, settingsList, pelletList] = await Promise.all([api.games.list(), api.settings.list(), api.pellets.list()]);
-    const found = gameList.find(g => g._id === gameId) ?? null;
+    const [gameList, settingsList, pelletList] = await Promise.all([api.games.list({ _id: gameId }), api.settings.list({ gameId }), api.pellets.list({ gameId })]);
+    const found = gameList[0] ?? null;
     setGame(found);
     if (!found) return;
-    let current = inGame(settingsList, gameId)[0];
+    let current = settingsList[0];
     if (!current) current = await api.settings.create({ gameId, phaseMinutes: 10, start: null });
     setSettings(current);
-    setPellets(inGame(pelletList, gameId));
+    setPellets(pelletList);
   }, [gameId]);
 
   const loadLive = useCallback(async () => {
-    // Every team, so new codes stay unique across games; captures and events
-    // for this game only, since they grow all day and this runs every poll.
-    const [teamList, captureList, eventList] = await Promise.all([api.teams.list(), api.captures.list({ gameId }), api.events.list({ gameId })]);
-    setAllCodes(teamList.map(t => t.code));
-    setTeams(inGame(teamList, gameId));
+    const [teamList, captureList, eventList] = await Promise.all([api.teams.list({ gameId }), api.captures.list({ gameId }), api.events.list({ gameId })]);
+    setTeams(teamList);
     setCaptures(captureList);
     setEvents(eventList);
   }, [gameId]);
@@ -112,7 +107,9 @@ export default function AdminApp({ gameId }: { gameId: string }) {
 
   const addTeams = (names: string[]) =>
     write(async () => {
-      const codes = new Set(allCodes);
+      // Codes must be unique across every game, so read them all fresh here
+      // rather than on every poll.
+      const codes = new Set((await api.teams.list()).map(t => t.code));
       const created: Team[] = [];
       for (const [i, name] of names.entries()) {
         const code = generateTeamCode(codes);
@@ -129,7 +126,6 @@ export default function AdminApp({ gameId }: { gameId: string }) {
         );
       }
       setTeams(list => [...list, ...created]);
-      setAllCodes(list => [...list, ...created.map(t => t.code)]);
     });
 
   // Straight from the store, not the last poll: a phone may have uploaded

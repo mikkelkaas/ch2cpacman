@@ -40,8 +40,8 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
   const now = useNow(1000);
 
   const loadStatic = useCallback(async () => {
-    const [gameList, pelletList] = await Promise.all([api.games.list(), api.pellets.list({ gameId })]);
-    setGame(gameList.find(g => g._id === gameId) ?? null);
+    const [gameList, pelletList] = await Promise.all([api.games.list({ _id: gameId }), api.pellets.list({ gameId })]);
+    setGame(gameList[0] ?? null);
     setPellets(pelletList);
   }, [gameId]);
 

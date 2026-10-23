@@ -25,17 +25,20 @@ export default function GamesPage() {
   const load = useCallback(async () => {
     setError(null);
     try {
+      // Teams and pellets are counted per game, so all of them; of the rest only
+      // the strays from before games existed, since captures and events grow big.
+      const stray = { gameId: { $in: [null, ''] } };
       let [gameList, settingsList, teamList, pelletList, captureList, eventList, heartbeatList] = await Promise.all([
         api.games.list(),
-        api.settings.list(),
+        api.settings.list(stray),
         api.teams.list(),
         api.pellets.list(),
-        api.captures.list(),
-        api.events.list(),
-        api.heartbeats.list().catch(() => []),
+        api.captures.list(stray),
+        api.events.list(stray),
+        api.heartbeats.list(stray).catch(() => []),
       ]);
-      const stray = [...orphans(settingsList), ...orphans(teamList), ...orphans(pelletList), ...orphans(captureList), ...orphans(eventList), ...orphans(heartbeatList)];
-      if (stray.length > 0) {
+      const strays = [...orphans(settingsList), ...orphans(teamList), ...orphans(pelletList), ...orphans(captureList), ...orphans(eventList), ...orphans(heartbeatList)];
+      if (strays.length > 0) {
         let home = homeForOrphans(gameList);
         if (!home) {
           home = await api.games.create({ name: FIRST_GAME_NAME, createdAt: new Date().toISOString() });
@@ -88,23 +91,23 @@ export default function GamesPage() {
     if (!confirm(da.confirmDeleteGame(game.name))) return;
     setBusy(true);
     try {
+      const mine = { gameId: game._id };
       const [settingsList, teamList, pelletList, captureList, eventList, heartbeatList] = await Promise.all([
-        api.settings.list(),
-        api.teams.list(),
-        api.pellets.list(),
-        api.captures.list(),
-        api.events.list(),
-        api.heartbeats.list().catch(() => []),
+        api.settings.list(mine),
+        api.teams.list(mine),
+        api.pellets.list(mine),
+        api.captures.list(mine),
+        api.events.list(mine),
+        api.heartbeats.list(mine).catch(() => []),
       ]);
-      const mine = <T extends { gameId?: string }>(list: T[]) => list.filter(r => r.gameId === game._id);
       await Promise.all([
-        ...mine(teamList).filter(t => t.photoKey).map(t => deleteFile(PHOTO_BUCKET, t.photoKey!).catch(() => undefined)),
-        ...mine(captureList).map(r => api.captures.remove(r._id)),
-        ...mine(eventList).map(r => api.events.remove(r._id)),
-        ...mine(pelletList).map(r => api.pellets.remove(r._id)),
-        ...mine(teamList).map(r => api.teams.remove(r._id)),
-        ...mine(settingsList).map(r => api.settings.remove(r._id)),
-        ...mine(heartbeatList).map(r => api.heartbeats.remove(r._id)),
+        ...teamList.filter(t => t.photoKey).map(t => deleteFile(PHOTO_BUCKET, t.photoKey!).catch(() => undefined)),
+        ...captureList.map(r => api.captures.remove(r._id)),
+        ...eventList.map(r => api.events.remove(r._id)),
+        ...pelletList.map(r => api.pellets.remove(r._id)),
+        ...teamList.map(r => api.teams.remove(r._id)),
+        ...settingsList.map(r => api.settings.remove(r._id)),
+        ...heartbeatList.map(r => api.heartbeats.remove(r._id)),
       ]);
       await api.games.remove(game._id);
       setGames(list => (list ?? []).filter(g => g._id !== game._id));
