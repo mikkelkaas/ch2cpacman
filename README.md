@@ -83,7 +83,10 @@ spectators can watch one team.
    divided by *Divider point med* under **Indstillinger** (default 5), rounded,
    at most 20. Ticking *Sendt til e-vent* is saved on the team, so every leader
    sees it, and moves the team from *Mangler e-vent* to *Færdig*. The page
-   refreshes every 5 seconds.
+   refreshes every 5 seconds. *Kort* switches to a map of every team in
+   *I gang*: where its runner phone last reported (no ghosts or spectators),
+   with the time left or *PÅ VEJ HJEM*, faded when the phone has gone quiet,
+   and a *Vis prikker* toggle for the dots.
 
 A pellet counts when a fix lands inside its radius, or when the straight line
 between two consecutive good fixes passes within it, so a team running through

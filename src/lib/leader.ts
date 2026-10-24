@@ -1,3 +1,6 @@
+import { isUsableFix } from './fix';
+import type { Heartbeat } from './heartbeat';
+import { isStale, staleForMs } from './heartbeat';
 import { phaseState } from './phase';
 import { SETTINGS_DEFAULTS } from './settings';
 import type { GameSettings, Team } from './types';
@@ -23,4 +26,30 @@ export function leaderStatus(team: Team, settings: GameSettings, nowMs: number):
   if (state === 'idle') return 'notPlayed';
   if (state !== 'over') return 'running';
   return team.eventSubmitted ? 'done' : 'missingEvent';
+}
+
+/** Where a running team's phone last said it was. */
+export interface TeamPosition {
+  team: Team;
+  lat: number;
+  lng: number;
+  /** How old the beat is. */
+  ageMs: number;
+  /** The phone has gone quiet: the dot shows where it was, not where it is. */
+  stale: boolean;
+}
+
+/**
+ * The runner phones' last positions for the given teams, from their
+ * heartbeats. A beat from before the team's start (an earlier run) or without
+ * a usable fix gives no position.
+ */
+export function teamPositions(teams: readonly Team[], beats: readonly Pick<Heartbeat, 'teamId' | 'fix' | 'at'>[], nowMs: number): TeamPosition[] {
+  const byTeam = new Map(beats.map(b => [b.teamId, b]));
+  return teams.flatMap(team => {
+    const beat = byTeam.get(team._id);
+    if (!beat?.fix || !isUsableFix(beat.fix) || !team.startedAt) return [];
+    if (Date.parse(beat.at) < Date.parse(team.startedAt)) return [];
+    return [{ team, lat: beat.fix.lat, lng: beat.fix.lng, ageMs: staleForMs(beat, nowMs) ?? 0, stale: isStale(beat, nowMs) }];
+  });
 }

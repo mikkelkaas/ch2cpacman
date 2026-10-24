@@ -121,6 +121,12 @@ export const da = {
   gamePoints: (n: number) => `${n} point`,
   eventOutOf: (max: number) => `/ ${max}`,
   eventSubmitted: 'Sendt til e-vent',
+  leaderListView: 'Liste',
+  leaderMapView: 'Kort',
+  showDots: 'Vis prikker',
+  runningOnMap: (shown: number, running: number) => `${shown} af ${running} hold i gang på kortet`,
+  noPosition: (names: string) => `Uden position: ${names}`,
+  positionAge: (ms: number) => (ms < 60_000 ? `${Math.round(ms / 1000)} s siden` : `${Math.round(ms / 60_000)} min siden`),
 } as const;
 
 export function formatClock(iso: string | number): string {

@@ -3,12 +3,15 @@ import { useNow } from '../hooks/useNow';
 import { usePolling } from '../hooks/usePolling';
 import { da, formatClock } from '../i18n/da';
 import { api } from '../lib/api';
-import { EVENT_MAX, eventScore, LEADER_STATUSES, leaderStatus } from '../lib/leader';
+import { HEARTBEAT_MS } from '../lib/heartbeat';
+import type { Heartbeat } from '../lib/heartbeat';
+import { EVENT_MAX, eventScore, LEADER_STATUSES, leaderStatus, teamPositions } from '../lib/leader';
 import type { LeaderStatus } from '../lib/leader';
 import { formatCountdown, remainingMs } from '../lib/phase';
 import { scoreTeam } from '../lib/score';
 import { withDefaults } from '../lib/settings';
 import type { Capture, Game, GameEvent, Pellet, Settings, Team } from '../lib/types';
+import LeaderMap from './LeaderMap';
 import QrDialog from './QrDialog';
 import { Button } from './ui';
 
@@ -16,6 +19,7 @@ import { Button } from './ui';
 const POLL_MS = 5_000;
 
 type Filter = LeaderStatus | 'all';
+type View = 'list' | 'map';
 
 /**
  * The page the leaders at the post keep open on their phones: every team of
@@ -37,6 +41,9 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
   // The teams the QR was opened on, kept while it is open: the team that
   // starts on it leaves "Ikke spillet" but may still want a spectator code.
   const [qr, setQr] = useState<{ teams: Team[]; id: string } | null>(null);
+  const [view, setView] = useState<View>('list');
+  const [showDots, setShowDots] = useState(true);
+  const [beats, setBeats] = useState<Heartbeat[]>([]);
   const now = useNow(1000);
 
   const loadStatic = useCallback(async () => {
@@ -63,8 +70,12 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
     });
   }, [gameId]);
 
+  // Only the runner phones' beats, and only while the map is open: as often as they are written.
+  const loadBeats = useCallback(async () => setBeats(await api.heartbeats.list({ gameId })), [gameId]);
+
   const staticPoll = usePolling(loadStatic, 60_000);
   const livePoll = usePolling(loadLive, POLL_MS);
+  const beatPoll = usePolling(loadBeats, HEARTBEAT_MS, view === 'map');
 
   const setSubmitted = async (team: Team, value: boolean) => {
     setPending(map => new Map(map).set(team._id, value));
@@ -92,6 +103,12 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
       .map(team => ({ team, status: leaderStatus(team, full, now), points: scoreTeam(team, captures, pellets, full, events, now).points }))
       .sort((a, b) => a.team.name.localeCompare(b.team.name, 'da'));
   }, [teams, pending, captures, events, pellets, full, now]);
+  const running = useMemo(() => rows.filter(r => r.status === 'running').map(r => r.team), [rows]);
+  const positions = useMemo(() => teamPositions(running, beats, now), [running, beats, now]);
+  const clocks = useMemo(() => {
+    const left = (t: Team) => (t.startedAt && full ? remainingMs(t.startedAt, full.phaseMinutes, now) : 0);
+    return new Map(running.map(t => [t._id, left(t) === 0 ? da.leaderLate : formatCountdown(left(t))]));
+  }, [running, full, now]);
 
   const shell = (children: React.ReactNode) => <div className="min-h-full bg-gray-100 text-gray-900 font-body">{children}</div>;
 
@@ -129,10 +146,11 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
 
   const shown = filter === 'all' ? rows : rows.filter(r => r.status === filter);
   const count = (f: Filter) => (f === 'all' ? rows.length : rows.filter(r => r.status === f).length);
-  const error = writeError ? da.saveFailed : livePoll.error || staticPoll.error ? da.fetchFailed : null;
+  const error = writeError ? da.saveFailed : livePoll.error || staticPoll.error || (view === 'map' && beatPoll.error) ? da.fetchFailed : null;
+  const unplaced = running.filter(t => !positions.some(p => p.team._id === t._id));
 
   return shell(
-    <div className="max-w-xl mx-auto flex flex-col">
+    <div className={`flex flex-col ${view === 'map' ? 'h-dvh' : 'max-w-xl mx-auto'}`}>
       <header className="sticky top-0 z-10 bg-gray-100 px-4 pt-3 pb-2 flex flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-lg font-semibold truncate">
@@ -142,6 +160,18 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
             {da.adminLink} →
           </a>
         </div>
+        <div className="flex rounded-md border border-gray-300 overflow-hidden self-start text-sm">
+          {(['list', 'map'] as const).map(v => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`px-4 py-1.5 ${view === v ? 'bg-blue-600 text-white font-medium' : 'bg-white text-gray-700'}`}
+            >
+              {v === 'list' ? da.leaderListView : da.leaderMapView}
+            </button>
+          ))}
+        </div>
+        {view === 'list' && (
         <div className="flex flex-wrap gap-2">
           {[...LEADER_STATUSES, 'all' as const].map(f => (
             <button
@@ -153,6 +183,16 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
             </button>
           ))}
         </div>
+        )}
+        {view === 'map' && (
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <span className="text-gray-600">{da.runningOnMap(positions.filter(p => !p.stale).length, running.length)}</span>
+            <label className="flex items-center gap-2 font-medium cursor-pointer shrink-0">
+              <input type="checkbox" checked={showDots} onChange={e => setShowDots(e.target.checked)} className="w-5 h-5" />
+              {da.showDots}
+            </label>
+          </div>
+        )}
         {error && (
           <div role="alert" className="flex items-center justify-between gap-3 bg-red-100 text-red-800 px-3 py-2 text-sm rounded-md border border-red-200">
             <span>{error}</span>
@@ -161,6 +201,7 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
               onClick={() => {
                 setWriteError(false);
                 void livePoll.reload();
+                if (view === 'map') void beatPoll.reload();
               }}
             >
               {da.retry}
@@ -169,6 +210,16 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
         )}
       </header>
 
+      {view === 'map' && (
+        <main className="flex-1 min-h-0 flex flex-col">
+          {unplaced.length > 0 && <p className="px-4 pb-2 text-sm text-gray-500">{da.noPosition(unplaced.map(t => `${t.name} (${clocks.get(t._id)})`).join(', '))}</p>}
+          <div className="flex-1 min-h-0">
+            <LeaderMap pellets={pellets} start={full.start} positions={positions} clocks={clocks} showDots={showDots} />
+          </div>
+        </main>
+      )}
+
+      {view === 'list' && (
       <main className="px-4 pb-6 flex flex-col gap-2">
         {shown.length === 0 && <p className="text-gray-500 text-sm py-6 text-center">{da.noTeamsHere}</p>}
         {shown.map(({ team, status, points }) => (
@@ -186,6 +237,7 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
         ))}
         {livePoll.lastLoadedAt && <p className="text-xs text-gray-400 text-center pt-2">{da.refreshed(formatClock(livePoll.lastLoadedAt))}</p>}
       </main>
+      )}
 
       {qr && <QrDialog teams={qr.teams} initialId={qr.id} onClose={() => setQr(null)} />}
     </div>,

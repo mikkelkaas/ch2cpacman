@@ -84,6 +84,15 @@ body { font-family: var(--font-body); -webkit-tap-highlight-color: transparent; 
 .plain-pellet.kind-double { background: #0891b2; font-size: 11px; }
 .plain-pellet.selected.kind-power, .plain-pellet.selected.kind-double { background: #f59e0b; }
 .leaflet-marker-draggable .plain-pellet:active { cursor: grabbing; }
+.team-pin { position: relative; width: 18px; height: 18px; }
+.team-pin-dot { position: absolute; inset: 0; border-radius: 9999px; border: 3px solid #fff; box-shadow: 0 0 0 1px #000, 0 1px 4px rgba(0,0,0,0.5); }
+.team-pin-name {
+  position: absolute; left: 22px; top: 50%; transform: translateY(-50%); white-space: nowrap;
+  font: 600 12px/1 var(--font-body); color: #111; background: rgba(255,255,255,0.9); padding: 3px 5px; border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.team-pin.stale { opacity: 0.55; }
+.team-pin.stale .team-pin-dot { border-style: dashed; }
 .plain-start { width: 18px; height: 18px; background: #16a34a; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 
 @media print {
