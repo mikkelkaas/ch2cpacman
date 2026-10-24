@@ -1,5 +1,5 @@
 import { latePenalty } from './late';
-import { GRACE_MS, phaseEndMs } from './phase';
+import { GRACE_MS, runEndMs } from './phase';
 import { SETTINGS_DEFAULTS } from './settings';
 import type { Capture, GameEvent, Pellet, Settings, Team } from './types';
 
@@ -85,7 +85,8 @@ const EMPTY = (team: Team): TeamScore => ({ team, points: 0, pellets: [], scored
  * penalty, floored at 0. A Dobbelt doubles pellets eaten in the `doubleSeconds`
  * after it, never itself and never ghost bonuses. The late penalty grows per
  * `lateStepS` between the end and `returnedAt`, or `nowMs` while the team is
- * still out. Everything is derived from timestamps, so the phone and the admin page
+ * still out. A team stamped home before the end stops counting at the stamp.
+ * Everything is derived from timestamps, so the phone and the admin page
  * agree without trusting each other's totals.
  */
 export function scoreTeam(
@@ -98,7 +99,7 @@ export function scoreTeam(
 ): TeamScore {
   if (!team.startedAt) return EMPTY(team);
   const startMs = Date.parse(team.startedAt);
-  const endMs = phaseEndMs(team.startedAt, settings.phaseMinutes) + GRACE_MS;
+  const endMs = runEndMs(team, settings.phaseMinutes) + GRACE_MS;
   const inWindow = (iso: string) => {
     const t = Date.parse(iso);
     return t >= startMs && t <= endMs;

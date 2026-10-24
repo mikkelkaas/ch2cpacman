@@ -27,6 +27,7 @@ export const playerEn: PlayerStrings = {
     ...(s.ghosts && s.hasPower ? [{ icon: '◉', text: `Eat a big dot and the ghosts turn blue. Catch them for ${s.bonus} points.` }] : []),
     ...(s.hasDouble ? [{ icon: '×2', text: 'Dots marked ×2 give double points for one minute.' }] : []),
     { icon: '⏰', text: 'When the time is up, the game is over. Points only count within the time.' },
+    { icon: '⌂', text: "Back at the start early? Press WE'RE HOME to stop, so the ghosts can't catch you." },
     ...(s.latePenalty > 0
       ? [{ icon: '⌂', text: `Be back at the start when the time is up. Every ${s.lateStep} seconds late costs ${s.latePenalty} points, at most ${s.latePenaltyMax}.` }]
       : []),
@@ -39,6 +40,8 @@ export const playerEn: PlayerStrings = {
   latePoints: (n: number) => `-${n} points`,
   lateLine: (n: number) => (n === 1 ? '1 point lost for coming home late' : `${n} points lost for coming home late`),
   homeInTime: 'Home in time!',
+  markHome: "WE'RE HOME",
+  markHomeConfirm: 'Are you home and want to stop now? The ghosts can no longer catch you, but you can no longer eat dots either.',
   caughtBanner: (points: number) => `CAUGHT! -${points}`,
   ghostEatenBanner: (points: number) => `+${points}`,
   ghostsCaught: (n: number) => (n === 1 ? 'caught once' : `caught ${n} times`),

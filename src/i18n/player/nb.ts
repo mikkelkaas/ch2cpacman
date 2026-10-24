@@ -28,6 +28,7 @@ export const playerNb: PlayerStrings = {
     ...(s.ghosts && s.hasPower ? [{ icon: '◉', text: `Spis en stor prikk, så blir spøkelsene blå. Fang dem for ${s.bonus} poeng.` }] : []),
     ...(s.hasDouble ? [{ icon: '×2', text: 'Prikker med ×2 gir dobbelt poeng i ett minutt.' }] : []),
     { icon: '⏰', text: 'Når tiden er ute, er spillet slutt. Poeng teller bare innenfor tiden.' },
+    { icon: '⌂', text: 'Tilbake ved start før tiden? Trykk VI ER HJEMME for å stoppe, så kan ikke spøkelsene fange dere.' },
     ...(s.latePenalty > 0
       ? [{ icon: '⌂', text: `Vær tilbake ved start når tiden er ute. Hvert ${s.lateStep}. sekund for sent koster ${s.latePenalty} poeng, maks ${s.latePenaltyMax}.` }]
       : []),
@@ -40,6 +41,8 @@ export const playerNb: PlayerStrings = {
   latePoints: (n: number) => `-${n} poeng`,
   lateLine: (n: number) => (n === 1 ? '1 poeng tapt for å komme for sent hjem' : `${n} poeng tapt for å komme for sent hjem`),
   homeInTime: 'Hjemme i tide!',
+  markHome: 'VI ER HJEMME',
+  markHomeConfirm: 'Er dere hjemme og vil stoppe nå? Spøkelsene kan ikke fange dere lenger, men dere kan heller ikke spise flere prikker.',
   caughtBanner: (points: number) => `TATT! -${points}`,
   ghostEatenBanner: (points: number) => `+${points}`,
   ghostsCaught: (n: number) => (n === 1 ? 'tatt 1 gang' : `tatt ${n} ganger`),

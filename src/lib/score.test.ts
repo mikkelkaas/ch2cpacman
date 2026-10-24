@@ -41,6 +41,11 @@ describe('scoreTeam', () => {
     expect(scoreTeam(team, [cap('t1', 'p2', 10 * 60_000 + 29_000)], pellets, settings).points).toBe(5);
     expect(scoreTeam(team, [cap('t1', 'p2', 10 * 60_000 + 31_000)], pellets, settings).points).toBe(0);
   });
+  it('stops counting at an early home stamp, after the grace', () => {
+    const home = { ...team, returnedAt: iso(4 * 60_000) };
+    expect(scoreTeam(home, [cap('t1', 'p1', 3 * 60_000), cap('t1', 'p2', 4 * 60_000 + 29_000)], pellets, settings).points).toBe(6);
+    expect(scoreTeam(home, [cap('t1', 'p2', 4 * 60_000 + 31_000)], pellets, settings).points).toBe(0);
+  });
   it('rejects a capture before the start', () => {
     expect(scoreTeam(team, [cap('t1', 'p2', -1000)], pellets, settings).points).toBe(0);
   });

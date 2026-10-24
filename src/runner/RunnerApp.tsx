@@ -9,7 +9,7 @@ import { useWakeLock } from '../hooks/useWakeLock';
 import { useT } from '../i18n/LangProvider';
 import { api } from '../lib/api';
 import { haversineM } from '../lib/geo';
-import { latePenalty } from '../lib/late';
+import { isHome, latePenalty } from '../lib/late';
 import { lateMs, phaseState, remainingMs } from '../lib/phase';
 import { eventQueue, pending } from '../lib/queue';
 import { isUsableFix } from '../lib/fix';
@@ -246,8 +246,15 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
   const { fix, error: geoError } = useGeolocation();
   const rule = { lateStepS: settings.lateStepS, latePenaltyPerStep: settings.latePenaltyPerStep, latePenaltyMax: settings.latePenaltyMax };
   // The countdown has ended and the team is not home: keep looking for home.
-  const afterEnd = !!team.startedAt && phaseState(team, settings.phaseMinutes, now, rule) === 'late';
-  const { homeAt } = useReturnHome({ active: afterEnd, fix, team, settings, onTeamChange });
+  const serverState = phaseState(team, settings.phaseMinutes, now, rule);
+  const { homeAt, markHome } = useReturnHome({
+    active: serverState === 'late',
+    out: serverState === 'running' || serverState === 'late',
+    fix,
+    team,
+    settings,
+    onTeamChange,
+  });
   // The phone's own stamp counts before the upload lands, like queued captures.
   const returnedAt = team.returnedAt ?? homeAt;
   const state = phaseState({ startedAt: team.startedAt, returnedAt }, settings.phaseMinutes, now, rule);
@@ -288,6 +295,8 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
   const late = team.startedAt ? latePenalty(team.startedAt, { ...rule, phaseMinutes: settings.phaseMinutes }, returnedAt, now) : 0;
   const points = Math.max(0, engine.points + ghosts.eventPoints - late);
   const homeDistanceM = fix && settings.start ? Math.round(haversineM(fix, settings.start)) : null;
+  // Back at the start before the end: the team may stop here, safe from the ghosts.
+  const canMarkHome = state === 'running' && !!fix && isUsableFix(fix) && !!settings.start && isHome(fix, settings.start, settings.homeRadiusM);
 
   // Cues for the run home: a siren when the countdown ends away from home,
   // a blip each time the penalty grows.
@@ -399,6 +408,7 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
           power={frightened}
           ghostBanner={ghosts.banner}
           weakSignal={!!fix && !isUsableFix(fix)}
+          onMarkHome={canMarkHome ? () => window.confirm(t.markHomeConfirm) && markHome() : undefined}
         />
       )}
 

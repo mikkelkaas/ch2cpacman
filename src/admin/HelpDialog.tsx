@@ -100,6 +100,11 @@ export default function HelpButton() {
                 ser den hjemme; ser du holdet komme før telefonen gør, så tryk <b>Hjemme</b> på holdet under Hold. Ingen bonus for at
                 komme tidligt. Sæt point tabt til 0 for at slå reglen fra.
               </p>
+              <p>
+                Er holdet tilbage inden for <i>Hjemmeradius</i> før tiden er gået, viser telefonen <b>VI ER HJEMME</b>. Trykker de på den,
+                er løbet slut med det samme: spøgelserne kan ikke fange dem mere, og prikker tæller ikke længere. Det samme sker, hvis du
+                trykker <b>Hjemme</b> på holdet, mens tiden løber.
+              </p>
             </Section>
 
             <Section title="2. Når et hold kommer">
@@ -132,7 +137,7 @@ export default function HelpButton() {
                   Point = prikker × dobbelt + spøgelsesbonus − fangster − for sent hjem, aldrig under 0.
                 </li>
                 <li>
-                  <b>Hjemme</b> stempler holdet som tilbage ved starten nu, hvis telefonen ikke selv nåede det.{' '}
+                  <b>Hjemme</b> stempler holdet som tilbage ved starten nu, hvis telefonen ikke selv nåede det. Før tid slutter det løbet.{' '}
                   <b>Nulstil</b> sletter holdets starttid, hjemkomst og alle deres point, så de kan løbe igen. Telefonen går tilbage til reglerne,
                   når den genindlæses.
                 </li>

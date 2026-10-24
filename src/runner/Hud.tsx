@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import ArcadeButton from '../components/ArcadeButton';
 import MuteToggle from '../components/MuteToggle';
 import { useT } from '../i18n/LangProvider';
 import { formatCountdown } from '../lib/phase';
@@ -25,6 +26,8 @@ interface Props {
   ghostBanner?: GhostBanner | null;
   /** The latest fix is too inaccurate to count. */
   weakSignal?: boolean;
+  /** Runner only, back inside the home radius before the end: end the run here. */
+  onMarkHome?: () => void;
   /** Spectator only: milliseconds since the runner phone's last beat when it has gone quiet, else null. */
   staleForMs?: number | null;
 }
@@ -41,7 +44,7 @@ function useRollingNumber(target: number): number {
   return shown;
 }
 
-export default function Hud({ remainingMs, lateMs = 0, latePoints = 0, homeDistanceM = null, points, pendingCount, onShowRules, doubleMs = 0, danger = false, power = false, ghostBanner = null, weakSignal = false, staleForMs = null }: Props) {
+export default function Hud({ remainingMs, lateMs = 0, latePoints = 0, homeDistanceM = null, points, pendingCount, onShowRules, doubleMs = 0, danger = false, power = false, ghostBanner = null, weakSignal = false, onMarkHome, staleForMs = null }: Props) {
   const t = useT();
   const shownPoints = useRollingNumber(points);
   const late = lateMs > 0;
@@ -105,6 +108,11 @@ export default function Hud({ remainingMs, lateMs = 0, latePoints = 0, homeDista
         {staleForMs !== null && <div className="font-arcade text-[9px] text-ghost-orange bg-black/80 px-2 py-1">{t.lastSeen(Math.round(staleForMs / 1000))}</div>}
         {weakSignal && <div className="font-arcade text-[9px] text-ghost-orange bg-black/80 px-2 py-1 blink">{t.weakSignal}</div>}
         {showWaiting && <div className="font-arcade text-[9px] text-ghost-orange bg-black/80 px-2 py-1">{t.waitingForNetwork}</div>}
+        {onMarkHome && (
+          <ArcadeButton onClick={onMarkHome} className="pointer-events-auto mb-1">
+            {t.markHome}
+          </ArcadeButton>
+        )}
         <div className="bg-black/80 border-2 border-maze px-4 py-2 text-center">
           <div className="font-arcade text-[9px] text-pellet">{t.score}</div>
           <div className="font-arcade text-3xl text-pac glow-pac tabular-nums">{String(shownPoints).padStart(4, '0')}</div>

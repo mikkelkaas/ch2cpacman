@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lateMs, phaseEndMs, phaseState, remainingMs } from './phase';
+import { lateMs, phaseEndMs, phaseState, remainingMs, runEndMs } from './phase';
 
 const startedAt = '2026-09-20T10:00:00.000Z';
 const start = Date.parse(startedAt);
@@ -15,6 +15,16 @@ describe('phase', () => {
   it('is running inside the window and over after it', () => {
     expect(phaseState({ startedAt }, 10, start + 5 * min)).toBe('running');
     expect(phaseState({ startedAt }, 10, start + 10 * min)).toBe('over');
+  });
+  it('is over as soon as the team is home, also before the end', () => {
+    const returnedAt = new Date(start + 4 * min).toISOString();
+    expect(phaseState({ startedAt, returnedAt }, 10, start + 5 * min)).toBe('over');
+    expect(runEndMs({ startedAt, returnedAt }, 10)).toBe(start + 4 * min);
+  });
+  it('ignores a home stamp from an earlier run', () => {
+    const returnedAt = new Date(start - min).toISOString();
+    expect(phaseState({ startedAt, returnedAt }, 10, start + 5 * min)).toBe('running');
+    expect(runEndMs({ startedAt, returnedAt }, 10)).toBe(start + 10 * min);
   });
   it('counts down and clamps at zero', () => {
     expect(remainingMs(startedAt, 10, start + 9 * min)).toBe(min);
