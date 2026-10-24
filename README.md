@@ -79,9 +79,9 @@ spectators can watch one team.
    welcome the teams, made for a phone; several leaders can have it open at
    once. It has a card per team, filtered by *Ikke spillet*, *I gang*,
    *Mangler e-vent*, *Færdig* or *Alle*, with *Vis QR* (the same full-screen QR
-   as the admin page), the score, and the 0–20 to enter in e-vent: points
+   as the admin page), the score, and the 0–25 to enter in e-vent: points
    divided by *Divider point med* under **Indstillinger** (default 5), rounded,
-   at most 20. Ticking *Sendt til e-vent* is saved on the team, so every leader
+   at most 25. Ticking *Sendt til e-vent* is saved on the team, so every leader
    sees it, and moves the team from *Mangler e-vent* to *Færdig*. The page
    refreshes every 5 seconds. *Kort* switches to a map of every team in
    *I gang*: where its runner phone last reported (no ghosts or spectators),

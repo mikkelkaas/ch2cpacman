@@ -6,9 +6,9 @@ import { SETTINGS_DEFAULTS } from './settings';
 import type { GameSettings, Team } from './types';
 
 /** The most a team can get in e-vent. */
-export const EVENT_MAX = 20;
+export const EVENT_MAX = 25;
 
-/** A team's points as the 0–20 the leaders enter in e-vent. */
+/** A team's points as the 0–25 the leaders enter in e-vent. */
 export function eventScore(points: number, divisor: number): number {
   const by = Number.isFinite(divisor) && divisor > 0 ? divisor : SETTINGS_DEFAULTS.eventDivisor;
   return Math.min(EVENT_MAX, Math.max(0, Math.round(points / by)));

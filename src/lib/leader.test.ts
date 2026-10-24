@@ -13,9 +13,9 @@ describe('eventScore', () => {
     expect(eventScore(58, 5)).toBe(12);
     expect(eventScore(57, 5)).toBe(11);
   });
-  it('stays within 0 to 20', () => {
+  it('stays within 0 to 25', () => {
     expect(eventScore(0, 5)).toBe(0);
-    expect(eventScore(140, 5)).toBe(20);
+    expect(eventScore(140, 5)).toBe(25);
   });
   it('treats a missing or broken divisor as the default 5', () => {
     expect(eventScore(50, 0)).toBe(10);

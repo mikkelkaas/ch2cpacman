@@ -45,7 +45,7 @@ export interface Settings extends GameScoped {
   latePenaltyPerStep?: number;
   /** The late penalty never exceeds this. */
   latePenaltyMax?: number;
-  /** Points are divided by this into the 0–20 the leaders enter in e-vent. */
+  /** Points are divided by this into the 0–25 the leaders enter in e-vent. */
   eventDivisor?: number;
 }
 

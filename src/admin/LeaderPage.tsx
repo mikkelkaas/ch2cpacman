@@ -23,7 +23,7 @@ type View = 'list' | 'map';
 
 /**
  * The page the leaders at the post keep open on their phones: every team of
- * one game, where it is, its QR code, its score and the 0–20 for e-vent, and
+ * one game, where it is, its QR code, its score and the 0–25 for e-vent, and
  * a shared tick for "entered in e-vent".
  */
 export default function LeaderPage({ gameId }: { gameId: string }) {
