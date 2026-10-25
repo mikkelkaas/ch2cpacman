@@ -4,8 +4,8 @@ export const SETTINGS_DEFAULTS = {
   mapTheme: 'nat' as const,
   teamPhoto: true,
   ghostCount: 2,
-  ghostSpeedMps: 1.5,
-  ghostMaxSpeedMps: 4,
+  ghostSpeedMps: 3 / 3.6,
+  ghostMaxSpeedMps: 8 / 3.6,
   ghostRampS: 60,
   ghostHeadStartS: 60,
   ghostPenalty: 2,
@@ -16,7 +16,6 @@ export const SETTINGS_DEFAULTS = {
   lateStepS: 10,
   latePenaltyPerStep: 1,
   latePenaltyMax: 10,
-  eventDivisor: 5,
 } as const;
 
 /** Distance at which a ghost catches the team, or is eaten while blue. */

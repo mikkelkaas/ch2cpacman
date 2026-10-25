@@ -78,12 +78,8 @@ spectators can watch one team.
 9. **Postmandskab** in the admin header opens the page for the leaders who
    welcome the teams, made for a phone; several leaders can have it open at
    once. It has a card per team, filtered by *Ikke spillet*, *I gang*,
-   *Mangler e-vent*, *Færdig* or *Alle*, with *Vis QR* (the same full-screen QR
-   as the admin page), the score, and the 0–25 to enter in e-vent: points
-   divided by *Divider point med* under **Indstillinger** (default 5), rounded,
-   at most 25. Ticking *Sendt til e-vent* is saved on the team, so every leader
-   sees it, and moves the team from *Mangler e-vent* to *Færdig*. The page
-   refreshes every 5 seconds. *Kort* switches to a map of every team in
+   *Færdig* or *Alle*, with *Vis QR* (the same full-screen QR as the admin
+   page) and the score. The page refreshes every 5 seconds. *Kort* switches to a map of every team in
    *I gang*: where its runner phone last reported (no ghosts or spectators),
    with the time left or *PÅ VEJ HJEM*, faded when the phone has gone quiet,
    and a *Vis prikker* toggle for the dots.
@@ -123,10 +119,11 @@ them immediately.
 All numbers are in *Indstillinger*: number of ghosts (0 turns them off), speed
 and top speed in km/h (stored as m/s), seconds to top speed, head start, points
 lost per catch, points per eaten ghost, power and Dobbelt durations. Defaults:
-2 ghosts, 5.4 km/h rising to 14.4 km/h over 60 s, 60 s head start, 2 points
-lost, 3 points per ghost, 20 s power, 60 s Dobbelt. A scout jogs at about
-9 km/h, so within a minute or two of release a ghost outruns the team and a
-catch is a matter of time. Set the top speed equal to the speed for constant
+2 ghosts, 3 km/h rising to 8 km/h over 60 s, 60 s head start, 2 points
+lost, 3 points per ghost, 20 s power, 60 s Dobbelt. The speeds are from the
+first event (30 teams, 7 minutes, 3 ghosts): a ghost at top speed is just
+slower than a jogging scout, so a team that keeps moving can stay ahead, and
+teams were caught about 2–3 times each. Set the top speed equal to the speed for constant
 ghosts. Set the type for new dots next to the point
 value before clicking the map.
 

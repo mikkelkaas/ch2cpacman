@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { da } from '../i18n/da';
-import { EVENT_MAX } from '../lib/leader';
 import { withDefaults } from '../lib/settings';
 import { MAP_THEMES } from '../lib/types';
 import type { GameSettings, MapTheme, Settings } from '../lib/types';
@@ -89,9 +88,6 @@ export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Pro
       {numberField('lateStepS', da.lateStep, 1)}
       {numberField('latePenaltyPerStep', da.latePenaltyPerStep, 0)}
       {numberField('latePenaltyMax', da.latePenaltyMax, 0)}
-      <h3 className="text-xs font-semibold text-gray-500 uppercase pt-2">{da.eventSettings}</h3>
-      {numberField('eventDivisor', da.eventDivisor, 0.1, 0.5)}
-      <p className="text-xs text-gray-500">{da.eventDivisorHint(full.eventDivisor, EVENT_MAX)}</p>
     </Panel>
   );
 }

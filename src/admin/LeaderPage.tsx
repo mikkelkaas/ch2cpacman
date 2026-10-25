@@ -5,7 +5,7 @@ import { da, formatClock } from '../i18n/da';
 import { api } from '../lib/api';
 import { HEARTBEAT_MS } from '../lib/heartbeat';
 import type { Heartbeat } from '../lib/heartbeat';
-import { EVENT_MAX, eventScore, LEADER_STATUSES, leaderStatus, teamPositions } from '../lib/leader';
+import { LEADER_STATUSES, leaderStatus, teamPositions } from '../lib/leader';
 import type { LeaderStatus } from '../lib/leader';
 import { formatCountdown, remainingMs } from '../lib/phase';
 import { scoreTeam } from '../lib/score';
@@ -23,8 +23,7 @@ type View = 'list' | 'map';
 
 /**
  * The page the leaders at the post keep open on their phones: every team of
- * one game, where it is, its QR code, its score and the 0–25 for e-vent, and
- * a shared tick for "entered in e-vent".
+ * one game, where it is, its QR code and its score.
  */
 export default function LeaderPage({ gameId }: { gameId: string }) {
   const [game, setGame] = useState<Game | null | undefined>(undefined);
@@ -33,10 +32,6 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [events, setEvents] = useState<GameEvent[]>([]);
-  // Ticks saved or on their way: shown at once, and kept until a poll agrees,
-  // so a poll that left before the save does not flip the box back.
-  const [pending, setPending] = useState<ReadonlyMap<string, boolean>>(new Map());
-  const [writeError, setWriteError] = useState(false);
   const [filter, setFilter] = useState<Filter>('notPlayed');
   // The teams the QR was opened on, kept while it is open: the team that
   // starts on it leaves "Ikke spillet" but may still want a spectator code.
@@ -52,7 +47,7 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
     setPellets(pelletList);
   }, [gameId]);
 
-  // Settings too: a new divisor from the admin page should reach the leaders.
+  // Settings too: a new run length from the admin page should reach the leaders.
   const loadLive = useCallback(async () => {
     const [teamList, captureList, eventList, settingsList] = await Promise.all([
       api.teams.list({ gameId }),
@@ -64,10 +59,6 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
     setCaptures(captureList);
     setEvents(eventList);
     setSettings(settingsList[0] ?? null);
-    setPending(map => {
-      const left = new Map([...map].filter(([id, value]) => teamList.find(t => t._id === id)?.eventSubmitted !== value));
-      return left.size === map.size ? map : left;
-    });
   }, [gameId]);
 
   // Only the runner phones' beats, and only while the map is open: as often as they are written.
@@ -77,32 +68,13 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
   const livePoll = usePolling(loadLive, POLL_MS);
   const beatPoll = usePolling(loadBeats, HEARTBEAT_MS, view === 'map');
 
-  const setSubmitted = async (team: Team, value: boolean) => {
-    setPending(map => new Map(map).set(team._id, value));
-    try {
-      // PUT replaces the whole record: build it on the team as the store has it now.
-      const current = (await api.teams.list({ _id: team._id }))[0] ?? team;
-      const saved = await api.teams.update({ ...current, eventSubmitted: value });
-      setTeams(list => list.map(t => (t._id === saved._id ? saved : t)));
-      setWriteError(false);
-    } catch {
-      setPending(map => {
-        const next = new Map(map);
-        next.delete(team._id);
-        return next;
-      });
-      setWriteError(true);
-    }
-  };
-
   const full = useMemo(() => (settings ? withDefaults(settings) : null), [settings]);
   const rows = useMemo(() => {
     if (!full || !pellets) return [];
     return teams
-      .map(t => (pending.has(t._id) ? { ...t, eventSubmitted: pending.get(t._id) } : t))
       .map(team => ({ team, status: leaderStatus(team, full, now), points: scoreTeam(team, captures, pellets, full, events, now).points }))
       .sort((a, b) => a.team.name.localeCompare(b.team.name, 'da'));
-  }, [teams, pending, captures, events, pellets, full, now]);
+  }, [teams, captures, events, pellets, full, now]);
   const running = useMemo(() => rows.filter(r => r.status === 'running').map(r => r.team), [rows]);
   const positions = useMemo(() => teamPositions(running, beats, now), [running, beats, now]);
   const clocks = useMemo(() => {
@@ -146,7 +118,7 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
 
   const shown = filter === 'all' ? rows : rows.filter(r => r.status === filter);
   const count = (f: Filter) => (f === 'all' ? rows.length : rows.filter(r => r.status === f).length);
-  const error = writeError ? da.saveFailed : livePoll.error || staticPoll.error || (view === 'map' && beatPoll.error) ? da.fetchFailed : null;
+  const error = livePoll.error || staticPoll.error || (view === 'map' && beatPoll.error) ? da.fetchFailed : null;
   const unplaced = running.filter(t => !positions.some(p => p.team._id === t._id));
 
   return shell(
@@ -199,7 +171,6 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
             <button
               className="underline"
               onClick={() => {
-                setWriteError(false);
                 void livePoll.reload();
                 if (view === 'map') void beatPoll.reload();
               }}
@@ -228,11 +199,9 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
             team={team}
             status={status}
             points={points}
-            eventPoints={eventScore(points, full.eventDivisor)}
             clock={team.startedAt ? formatCountdown(remainingMs(team.startedAt, full.phaseMinutes, now)) : ''}
             late={!!team.startedAt && remainingMs(team.startedAt, full.phaseMinutes, now) === 0}
             onShowQr={() => setQr({ teams: shown.map(r => r.team), id: team._id })}
-            onSubmittedChange={value => void setSubmitted(team, value)}
           />
         ))}
         {livePoll.lastLoadedAt && <p className="text-xs text-gray-400 text-center pt-2">{da.refreshed(formatClock(livePoll.lastLoadedAt))}</p>}
@@ -248,24 +217,21 @@ interface CardProps {
   team: Team;
   status: LeaderStatus;
   points: number;
-  eventPoints: number;
   /** Time left while running. */
   clock: string;
   /** The countdown is over and the team is on its way home. */
   late: boolean;
   onShowQr: () => void;
-  onSubmittedChange: (value: boolean) => void;
 }
 
 const BADGE: Record<LeaderStatus, string> = {
   notPlayed: 'bg-gray-100 text-gray-600',
   running: 'bg-blue-100 text-blue-800',
-  missingEvent: 'bg-amber-100 text-amber-800',
   done: 'bg-green-100 text-green-800',
 };
 
-function TeamCard({ team, status, points, eventPoints, clock, late, onShowQr, onSubmittedChange }: CardProps) {
-  const finished = status === 'missingEvent' || status === 'done';
+function TeamCard({ team, status, points, clock, late, onShowQr }: CardProps) {
+  const finished = status === 'done';
   const badge = status === 'running' ? (late ? da.leaderLate : da.leaderRunning(clock)) : finished ? da.finished : da.leaderStatus.notPlayed;
   return (
     <section className="bg-white border border-gray-200 rounded-lg shadow-sm p-3 flex flex-col gap-2">
@@ -278,14 +244,7 @@ function TeamCard({ team, status, points, eventPoints, clock, late, onShowQr, on
       </div>
 
       {status === 'running' && <div className="text-sm text-gray-600">{da.pointsSoFar(points)}</div>}
-      {finished && (
-        <div className="flex items-baseline justify-between gap-3">
-          <span className="text-sm text-gray-600">{da.gamePoints(points)}</span>
-          <span className="text-sm text-gray-500">
-            e-vent <span className="text-2xl font-bold text-gray-900 tabular-nums">{eventPoints}</span> {da.eventOutOf(EVENT_MAX)}
-          </span>
-        </div>
-      )}
+      {finished && <div className="text-2xl font-bold tabular-nums">{da.gamePoints(points)}</div>}
 
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -294,12 +253,6 @@ function TeamCard({ team, status, points, eventPoints, clock, late, onShowQr, on
           </Button>
           <span className="font-mono text-sm text-gray-500 tracking-widest">{team.code}</span>
         </div>
-        {finished && (
-          <label className="flex items-center gap-2 text-sm font-medium py-2 cursor-pointer">
-            <input type="checkbox" checked={!!team.eventSubmitted} onChange={e => onSubmittedChange(e.target.checked)} className="w-5 h-5" />
-            {da.eventSubmitted}
-          </label>
-        )}
       </div>
     </section>
   );
