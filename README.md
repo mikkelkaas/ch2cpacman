@@ -97,6 +97,53 @@ a wake lock where the browser supports it. Captures made without signal are
 queued on the phone and uploaded when it reconnects; the phone's own score counts
 them immediately.
 
+## Spilform: samlet start og fælles prikker
+
+Each game has a *Spilform* in *Indstillinger*:
+
+- **Hver for sig** (the default, and how older games behave): everything above.
+  Each team taps *TRYK START* when it is ready and has its own clock.
+- **Samlet start**: no team can start on its own. A leader gives one signal and
+  every team in the game shares one clock and one end. Dots work as before,
+  each team can eat every dot.
+- **Samlet start, fælles prikker**: the same, and a dot eaten by one team is gone
+  for the others. It is a race for each dot.
+
+The signal is *Start alle*, on the admin page (a panel above the teams) and on
+Postmandskab. It asks for a confirm, and is enabled once the start point and at
+least one dot are set. The pressing device stamps `groupStartedAt` on the game's
+settings from its own clock; after that the panel shows the shared clock. Teams
+are not written to, so a phone's photo or home stamp cannot race the start.
+A team's start is then always the game's `groupStartedAt`; its own `startedAt` is
+ignored.
+
+Before the signal a phone goes through code, rules, photo and map as usual, but
+where *TRYK START* would be it says to wait for the leader, and polls the settings
+every 2 s. If its clock is behind the leader's it counts down to the signal
+instead of starting early. A phone that joins or reloads after the signal goes
+straight into the running game with the time that is left; a team still on the
+rules or photo when the signal comes is simply in the game when it reaches the
+map. Ghosts are still per phone, with the head start counted from the signal.
+
+*Nulstil alle* replaces the per-team *Nulstil* in the two group modes (that
+button is hidden): after a confirm it clears the signal, every team's return, and
+the game's captures, events and heartbeats. *Hjemme* and *Slet* stay per team.
+The *Spilform* select is locked while a signal has been given or any team has a
+start or captures; *Nulstil alle* unlocks it, and is also offered in a solo game
+that has been played, where it also clears every team's `startedAt`.
+
+In shared mode the first team to a dot gets it, decided by the earliest
+`capturedAt` among captures that count for their own team (a tie goes to the
+lower `clientId`). While running, a phone reads the game's captures every 3 s;
+a dot another team owns flashes in that team's colour and disappears. The
+phone's own capture counts at once, so if another team turns out to have been
+first, the dot comes off the score and a banner names the team. A phone that
+was offline can therefore take a dot after the fact when its capture is
+earlier, and a phone showing GAME OVER keeps polling until the late window has
+passed, so its score can still change; the screen points to the scoreboard for
+the final standings. Power and Dobbelt stay with the team that ate the dot,
+but a Dobbelt that is lost stops doubling.
+
 ## Ghosts, power pellets and Dobbelt
 
 - **Spøgelser.** Ghosts live on the phone only. They wait out a head start, then
@@ -153,7 +200,10 @@ value before clicking the map.
 - Late home: `floor((returnedAt − end) / step) × penalty`, capped. A team not
   yet home is charged as of now, and as the cap once the late window has
   passed. Subtracted after ghost events, and the total never goes below 0.
-- Each team can eat each pellet once. Pellets are not removed for other teams.
+- Each team can eat each pellet once. In *Hver for sig* and *Samlet start*
+  pellets are not removed for other teams. In *Samlet start, fælles prikker* a
+  pellet belongs to the team with the earliest counted capture and is gone for
+  the others.
 - Points = pellets × Dobbelt multiplier + ghost bonuses − catches, never below 0.
 - Every team sees the same full map, whether it plays at 9:00 or 16:00.
 
@@ -172,7 +222,7 @@ if needed) the first time it loads.
 | Collection | Contents |
 | --- | --- |
 | `ch2cpacman_games` | `name`, `createdAt` |
-| `ch2cpacman_settings` | one per game: `phaseMinutes`, `start`, `mapTheme`, ghost settings |
+| `ch2cpacman_settings` | one per game: `phaseMinutes`, `start`, `mapTheme`, `playMode` (`solo`, `together`, `shared`; missing means `solo`), `groupStartedAt` (ISO or null), ghost settings |
 | `ch2cpacman_teams` | `name`, `code`, `color`, `createdAt`, `startedAt` |
 | `ch2cpacman_pellets` | `name`, `lat`, `lng`, `radiusM`, `points`, `kind` (`normal`, `power`, `double`) |
 | `ch2cpacman_captures` | append-only: `teamId`, `pelletId`, `capturedAt`, `lat`, `lng`, `clientId` |
@@ -218,6 +268,10 @@ To test against throwaway collections instead of the live ones, build with
 `VITE_COLLECTION_PREFIX=ch2cpacman_test_` and drop the `ch2cpacman_test_*`
 collections afterwards.
 
+Under `pnpm dev` the runner's map can draw no pellets: React StrictMode mounts
+the map twice and the pellet markers from the first mount stay in `RunnerMap`'s
+layer cache, attached to the removed map. Production builds are fine.
+
 The runner's map tiles are plain OpenStreetMap recoloured with CSS filters, one
 preset per theme (`.theme-*` in `src/styles.css`); the hosted dark basemaps now
 require API keys. The admin page is deliberately unthemed: the arcade look is
@@ -246,3 +300,13 @@ for players only.
   snaps back.
 - [ ] Spectator, weak signal: cover the runner phone's GPS for 15 s. The
   spectator shows SVAGT GPS-SIGNAL, not SIDST SET.
+- [ ] Group start: set a game to *Samlet start*, open the runner on two phones with two
+  teams. Both wait on "the leader gives the signal". Press *Start alle* (try it on
+  Postmandskab too): both start within a few seconds on the same clock.
+- [ ] Late joiner: a third phone enters its code after the signal and goes straight to
+  the running game with the time left.
+- [ ] Shared dot: set *Samlet start, fælles prikker*. When one phone eats a dot it
+  flashes and disappears on the other within a few seconds. Put one phone in
+  airplane mode, let both eat the same dot, the airplane-mode one first. Back
+  online: the dot moves to it, the other phone shows a banner and its score drops.
+- [ ] *Nulstil alle* returns both phones to the waiting panel and unlocks *Spilform*.
