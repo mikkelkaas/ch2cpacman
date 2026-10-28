@@ -9,7 +9,7 @@ import { useWakeLock } from '../hooks/useWakeLock';
 import { useT } from '../i18n/LangProvider';
 import { api } from '../lib/api';
 import { haversineM } from '../lib/geo';
-import { groupEndMs, isGroupMode, isSharedDots, signalPendingMs, withGroupStart } from '../lib/group';
+import { groupEndMs, isGroupMode, isSharedDots, settingsChange, signalPendingMs, withGroupStart } from '../lib/group';
 import { isHome, latePenalty } from '../lib/late';
 import { lateMs, phaseState, remainingMs } from '../lib/phase';
 import { eventQueue, pending } from '../lib/queue';
@@ -35,7 +35,7 @@ import SpectatorGame from './SpectatorGame';
 import SpectatorQr from './SpectatorQr';
 import { initialCaptureTimes, useCaptureEngine } from './useCaptureEngine';
 import { useGhosts } from './useGhosts';
-import { useGroupSignal } from './useGroupSignal';
+import { fetchGameSettings, STARTED_POLL_MS, useGroupSignal, WAITING_POLL_MS } from './useGroupSignal';
 import { useHeartbeat } from './useHeartbeat';
 import { useReturnHome } from './useReturnHome';
 import { useLostDotBanner, useSharedDots } from './useSharedDots';
@@ -47,6 +47,10 @@ interface GameData {
   events: GameEvent[];
   /** This team's last heartbeat, so a reload continues the ghosts. */
   heartbeat: Heartbeat | null;
+  /** Which load this is: a new one remounts the game, fresh. */
+  load: number;
+  /** Reloaded because the leader cleared or replaced the signal: the team has read the rules. */
+  resumed: boolean;
 }
 
 export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { joinCode?: string | null; joinRole?: Role }) {
@@ -122,7 +126,7 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
   // opened on a phone that remembers another team starts loading the old
   // team's game first. Only the latest load may set the data.
   const loadSeq = useRef(0);
-  const loadGame = useCallback(async () => {
+  const loadGame = useCallback(async (resumed = false) => {
     if (!loadTeamId) return;
     const seq = ++loadSeq.current;
     setDataError(null);
@@ -146,6 +150,8 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
         captures,
         events,
         heartbeat: beats[0] ?? null,
+        load: seq,
+        resumed,
       });
     } catch (err) {
       if (seq !== loadSeq.current) return;
@@ -162,8 +168,29 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
     };
   }, [loadGame]);
 
-  // The leader's signal lands on the settings record while the game is open.
-  const onSettingsChange = useCallback((settings: Settings) => setData(d => (d ? { ...d, settings } : d)), []);
+  // The leader's signal, a Spilform change, a Nulstil alle or a second Start
+  // alle land on the settings record while the game is open. A cleared or
+  // replaced signal ends the run on screen: reload the game (the eaten dots
+  // and ghosts of the old run are gone from the store) and start it over.
+  const openSettings = useRef<Settings | null>(null);
+  openSettings.current = data?.settings ?? null;
+  const restarting = useRef(false);
+  const onSettingsChange = useCallback(
+    (fresh: Settings) => {
+      const open = openSettings.current;
+      if (!open) return;
+      const change = settingsChange(open, fresh);
+      if (change === 'update') setData(d => (d ? { ...d, settings: fresh } : d));
+      // A failed reload leaves the old settings open, so the next read tries again.
+      if (change === 'restart' && !restarting.current) {
+        restarting.current = true;
+        void loadGame(true).finally(() => {
+          restarting.current = false;
+        });
+      }
+    },
+    [loadGame],
+  );
 
   // The team as the game sees it: in a group game it starts on the signal.
   // Only for display and play, never written back.
@@ -187,14 +214,14 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
   if (dataError && !data) {
     return (
       <div className="min-h-full flex flex-col">
-        <ErrorBar message={t.fetchFailed} onRetry={loadGame} />
+        <ErrorBar message={t.fetchFailed} onRetry={() => void loadGame()} />
         <FullScreenMessage title={t.title} />
       </div>
     );
   }
   if (!data) return <FullScreenMessage title={t.loading} />;
 
-  const { settings, pellets, captures, events, heartbeat } = data;
+  const { settings, pellets, captures, events, heartbeat, load, resumed } = data;
   if (!settings._id || !settings.start || pellets.length === 0) {
     return (
       <FullScreenMessage title={t.notSetUp}>
@@ -227,7 +254,8 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
 
   return (
     <Game
-      key={team._id}
+      key={`${team._id}:${load}`}
+      resumed={resumed}
       team={effectiveTeam ?? team}
       settings={withDefaults(settings)}
       pellets={pellets}
@@ -251,18 +279,28 @@ interface GameProps {
   heartbeat: Heartbeat | null;
   /** Takes a raw team record, as the store has it. */
   onTeamChange: (team: Team) => void;
+  /** Takes the game's settings as the store has them now. */
   onSettingsChange: (settings: Settings) => void;
   onLeaveTeam: () => void;
+  /** Remounted after the leader cleared or replaced the signal: skip the rules and the photo. */
+  resumed: boolean;
 }
 
 /** `team` is the effective team (`withGroupStart`): never write it back. */
-function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChange, onSettingsChange, onLeaveTeam }: GameProps) {
+function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChange, onSettingsChange, onLeaveTeam, resumed }: GameProps) {
   const t = useT();
   const now = useNow(250);
   const groupMode = isGroupMode(settings);
   // A phone clock behind the leader's sees the signal in the future: count down to it.
   const signalMs = signalPendingMs(settings, now);
-  useGroupSignal({ enabled: groupMode && (!settings.groupStartedAt || signalMs > 0), gameId: team.gameId, onSettings: onSettingsChange });
+  // For the whole run, not only until the signal: a Nulstil alle or a second
+  // Start alle must reach a phone that is already out. Never in solo.
+  useGroupSignal({
+    enabled: groupMode,
+    intervalMs: settings.groupStartedAt && signalMs === 0 ? STARTED_POLL_MS : WAITING_POLL_MS,
+    gameId: team.gameId,
+    onSettings: onSettingsChange,
+  });
   const { fix, error: geoError } = useGeolocation();
   const rule = { lateStepS: settings.lateStepS, latePenaltyPerStep: settings.latePenaltyPerStep, latePenaltyMax: settings.latePenaltyMax };
   // The countdown has ended and the team is not home: keep looking for home.
@@ -278,10 +316,10 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
   // The phone's own stamp counts before the upload lands, like queued captures.
   const returnedAt = team.returnedAt ?? homeAt;
   const state = phaseState({ startedAt: team.startedAt, returnedAt }, settings.phaseMinutes, now, rule);
-  const [briefed, setBriefed] = useState(state !== 'idle');
+  const [briefed, setBriefed] = useState(state !== 'idle' || resumed);
   // A phone that mounts mid-run skips the rules and the photo. One that is
   // still on them when the signal comes stays there until the team moves on.
-  const [photoSkipped, setPhotoSkipped] = useState(state !== 'idle');
+  const [photoSkipped, setPhotoSkipped] = useState(state !== 'idle' || resumed);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -330,7 +368,7 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
   useEffect(() => setOwnCaptures(engine.captureTimes), [engine.captureTimes]);
   // Another team's dots are drawn as gone.
   const mapEatenIds = useMemo(() => (shared ? new Set([...engine.eatenIds, ...sharedDots.blockedIds]) : engine.eatenIds), [shared, engine.eatenIds, sharedDots.blockedIds]);
-  const firstBanner = useLostDotBanner(sharedDots.lost, shared && (state === 'running' || state === 'late'));
+  const firstBanner = useLostDotBanner(sharedDots.lost, sharedDots.loaded, shared && (state === 'running' || state === 'late'));
   // Publish this phone's fix and ghosts for spectators while the team is out.
   useHeartbeat({ active: state === 'running' || state === 'late', team, fix, ghosts: ghosts.ghosts });
   const late = team.startedAt ? latePenalty(team.startedAt, { ...rule, phaseMinutes: settings.phaseMinutes }, returnedAt, now) : 0;
@@ -377,6 +415,13 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
     setStarting(true);
     setStartError(null);
     try {
+      // A solo phone does not poll, so it reads the Spilform here: if the game
+      // has since become a group game, wait for the signal instead of starting.
+      const fresh = await fetchGameSettings(team.gameId);
+      if (fresh && isGroupMode(fresh)) {
+        onSettingsChange(fresh);
+        return;
+      }
       const updated = await api.teams.update({ ...team, startedAt: new Date().toISOString() });
       flashReady();
       onTeamChange(updated);

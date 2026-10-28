@@ -3,38 +3,42 @@ import { usePolling } from '../hooks/usePolling';
 import { api } from '../lib/api';
 import type { Settings } from '../lib/types';
 
-const POLL_MS = 2000;
+/** Waiting for the signal: the start should be felt at once. */
+export const WAITING_POLL_MS = 2000;
+/** After the signal: only a Nulstil alle or a new Start alle can still come. */
+export const STARTED_POLL_MS = 5000;
+
+/** The game's settings as the store has them now; null if there are none. */
+export async function fetchGameSettings(gameId: string | undefined): Promise<Settings | null> {
+  // Records from before games existed have no gameId to filter on.
+  const list = await api.settings.list(gameId ? { gameId } : undefined);
+  return list.find(s => (gameId ? s.gameId === gameId : !s.gameId)) ?? null;
+}
 
 interface Options {
-  /** A group game whose signal has not come yet, or still lies in the future. */
+  /** A group game is open. Never in solo: a solo phone does not poll. */
   enabled: boolean;
+  intervalMs: number;
   gameId: string | undefined;
   onSettings: (s: Settings) => void;
 }
 
 /**
- * Waits for the leader's Start alle: polls the game's settings and hands the
- * record over whenever its `groupStartedAt` differs from the last one seen
- * (the first read always counts, so a signal given while the game loaded is
- * not missed). A failed read is retried on the next poll.
+ * Watches a group game's settings for the leader's Start alle, a Nulstil
+ * alle, a second Start alle or a Spilform change, and hands every read over;
+ * the receiver decides what changed (`settingsChange`). A failed read is
+ * retried on the next poll.
  */
-export function useGroupSignal({ enabled, gameId, onSettings }: Options): void {
+export function useGroupSignal({ enabled, intervalMs, gameId, onSettings }: Options): void {
   const onSettingsRef = useRef(onSettings);
   onSettingsRef.current = onSettings;
-  const lastSeen = useRef<string | null | undefined>(undefined);
 
   usePolling(
     async () => {
-      // Records from before games existed have no gameId to filter on.
-      const list = await api.settings.list(gameId ? { gameId } : undefined);
-      const current = list.find(s => (gameId ? s.gameId === gameId : !s.gameId));
-      if (!current) return;
-      const signal = current.groupStartedAt ?? null;
-      if (signal === lastSeen.current) return;
-      lastSeen.current = signal;
-      onSettingsRef.current(current);
+      const current = await fetchGameSettings(gameId);
+      if (current) onSettingsRef.current(current);
     },
-    POLL_MS,
+    intervalMs,
     enabled,
   );
 }

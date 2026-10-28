@@ -301,7 +301,8 @@ for players only.
 - [ ] Spectator, weak signal: cover the runner phone's GPS for 15 s. The
   spectator shows SVAGT GPS-SIGNAL, not SIDST SET.
 - [ ] Group start: set a game to *Samlet start*, open the runner on two phones with two
-  teams. Both wait on "the leader gives the signal". Press *Start alle* (try it on
+  teams. Both wait on "Kig på kortet og læg en plan. Tiden starter, når lederen giver
+  signal." Press *Start alle* (try it on
   Postmandskab too): both start within a few seconds on the same clock.
 - [ ] Late joiner: a third phone enters its code after the signal and goes straight to
   the running game with the time left.
@@ -309,4 +310,9 @@ for players only.
   flashes and disappears on the other within a few seconds. Put one phone in
   airplane mode, let both eat the same dot, the airplane-mode one first. Back
   online: the dot moves to it, the other phone shows a banner and its score drops.
-- [ ] *Nulstil alle* returns both phones to the waiting panel and unlocks *Spilform*.
+- [ ] *Nulstil alle* during the run returns both phones to the waiting panel within
+  about 5 s, all dots back and no rules screen, and unlocks *Spilform*. A second
+  *Start alle* then starts both on the new clock.
+- [ ] *Spilform* changed while phones wait: from *Samlet start* to *Hver for sig* the
+  waiting phones show TRYK START within a few seconds; the other way, a phone on
+  TRYK START that is tapped waits for the signal instead of starting.

@@ -135,8 +135,9 @@ export function scoreTeam(
   const byId = new Map(pellets.map(p => [p._id, p]));
   const doubleMs = (settings.doubleSeconds ?? SETTINGS_DEFAULTS.doubleSeconds) * 1000;
 
-  const counted = dedupeCaptures(captures.filter(c => c.teamId === team._id))
-    .filter(c => inWindow(c.capturedAt) && byId.has(c.pelletId) && (!owners || owners.get(c.pelletId) === team._id))
+  // The window first, as dotOwners does: a capture from before the start must not hide a later one of the same dot.
+  const counted = dedupeCaptures(captures.filter(c => c.teamId === team._id && inWindow(c.capturedAt)))
+    .filter(c => byId.has(c.pelletId) && (!owners || owners.get(c.pelletId) === team._id))
     .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt));
 
   const doubleStarts = counted.filter(c => byId.get(c.pelletId)!.kind === 'double').map(c => Date.parse(c.capturedAt));

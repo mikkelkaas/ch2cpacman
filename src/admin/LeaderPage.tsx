@@ -42,6 +42,7 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
   const [view, setView] = useState<View>('list');
   const [showDots, setShowDots] = useState(true);
   const [beats, setBeats] = useState<Heartbeat[]>([]);
+  const [startFailed, setStartFailed] = useState(false);
   const now = useNow(1000);
 
   const loadStatic = useCallback(async () => {
@@ -129,7 +130,7 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
 
   const shown = filter === 'all' ? rows : rows.filter(r => r.status === filter);
   const count = (f: Filter) => (f === 'all' ? rows.length : rows.filter(r => r.status === f).length);
-  const error = livePoll.error || staticPoll.error || (view === 'map' && beatPoll.error) ? da.fetchFailed : null;
+  const error = startFailed ? da.saveFailed : livePoll.error || staticPoll.error || (view === 'map' && beatPoll.error) ? da.fetchFailed : null;
   const unplaced = running.filter(t => !positions.some(p => p.team._id === t._id));
 
   return shell(
@@ -159,7 +160,13 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
           pelletCount={pellets.length}
           teamCount={teams.length}
           onStart={async () => {
-            await startGroup(gameId);
+            setStartFailed(false);
+            try {
+              await startGroup(gameId);
+            } catch {
+              setStartFailed(true);
+              return;
+            }
             await livePoll.reload();
           }}
         />
@@ -191,6 +198,7 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
             <button
               className="underline"
               onClick={() => {
+                setStartFailed(false);
                 void livePoll.reload();
                 if (view === 'map') void beatPoll.reload();
               }}

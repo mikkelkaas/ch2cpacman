@@ -81,7 +81,7 @@ export default function SpectatorGame({ team: initialTeam, settings: initialSett
     ownTeamId: team._id,
     ownCaptures: captureTimes,
   });
-  const firstBanner = useLostDotBanner(sharedDots.lost, shared && (state === 'running' || state === 'late'));
+  const firstBanner = useLostDotBanner(sharedDots.lost, sharedDots.loaded, shared && (state === 'running' || state === 'late'));
 
   // Score exactly as the admin and the runner do, from timestamps.
   const score = scoreTeam(team, captures, pellets, settings, events, now, shared ? sharedDots.owners : undefined);

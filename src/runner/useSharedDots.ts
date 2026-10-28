@@ -54,6 +54,8 @@ export function useSharedDots({ enabled, settings, pellets, ownTeamId, ownCaptur
     const taken = takenDots(owners, ownTeamId);
     const lost = new Map([...lostDots(ownCaptures, owners, ownTeamId)].flatMap(([pelletId, teamId]) => (byId.has(teamId) ? [[pelletId, byId.get(teamId)!] as const] : [])));
     return {
+      /** The first poll is in: `lost` from here on is the server's word. */
+      loaded: server !== null,
       owners,
       teams,
       /** Dots another team owns: never eaten here, drawn as gone. */
@@ -63,25 +65,34 @@ export function useSharedDots({ enabled, settings, pellets, ownTeamId, ownCaptur
       /** Dots this phone ate that another team was first to: pellet id to that team. */
       lost: lost as ReadonlyMap<string, Team>,
     };
-  }, [owners, teams, ownCaptures, ownTeamId]);
+  }, [server, owners, teams, ownCaptures, ownTeamId]);
 }
 
 /**
  * Names the team that was first to a dot this phone ate, once per dot, for
  * two seconds, with the hurt sound. Only while `active` (the HUD is up).
+ * The dots already lost in the first poll (`loaded` turning true) were lost
+ * before this screen opened, on a reload or a spectator joining: they are
+ * taken as announced, not announced again.
  */
-export function useLostDotBanner(lost: ReadonlyMap<string, Team>, active: boolean): string | null {
-  const announced = useRef(new Set<string>());
+export function useLostDotBanner(lost: ReadonlyMap<string, Team>, loaded: boolean, active: boolean): string | null {
+  const announced = useRef<Set<string> | null>(null);
   const [banner, setBanner] = useState<{ name: string; at: number } | null>(null);
 
   useEffect(() => {
+    if (!loaded) return;
+    if (!announced.current) {
+      announced.current = new Set(lost.keys());
+      return;
+    }
     if (!active) return;
-    const fresh = [...lost].filter(([pelletId]) => !announced.current.has(pelletId));
+    const seen = announced.current;
+    const fresh = [...lost].filter(([pelletId]) => !seen.has(pelletId));
     if (fresh.length === 0) return;
-    for (const [pelletId] of fresh) announced.current.add(pelletId);
+    for (const [pelletId] of fresh) seen.add(pelletId);
     setBanner({ name: fresh[fresh.length - 1][1].name, at: Date.now() });
     sound.hurt();
-  }, [lost, active]);
+  }, [lost, loaded, active]);
 
   useEffect(() => {
     if (!banner) return;

@@ -10,6 +10,7 @@ interface Props {
   settings: GameSettings;
   pelletCount: number;
   teamCount: number;
+  /** Shows its own failure; must not reject. */
   onStart: () => Promise<void>;
 }
 

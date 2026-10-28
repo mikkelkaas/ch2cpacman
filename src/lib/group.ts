@@ -36,3 +36,17 @@ export function groupEndMs(s: GameSettings): number | null {
 export function canChangePlayMode(s: Pick<Settings, 'groupStartedAt'>, rawTeams: readonly Team[], captureCount: number): boolean {
   return !s.groupStartedAt && !rawTeams.some((t) => t.startedAt) && captureCount === 0;
 }
+
+/**
+ * What a fresh read of the settings means for a phone that has the game open.
+ * `restart`: the signal it had was cleared (Nulstil alle) or replaced (a new
+ * Start alle), so the run it shows is gone. `update`: the signal came, or the
+ * Spilform changed. `none`: nothing the phone needs.
+ */
+export function settingsChange(open: Pick<Settings, 'playMode' | 'groupStartedAt'>, fresh: Pick<Settings, 'playMode' | 'groupStartedAt'>): 'none' | 'update' | 'restart' {
+  const had = open.groupStartedAt ?? null;
+  const has = fresh.groupStartedAt ?? null;
+  if (had && has !== had) return 'restart';
+  if (has !== had || (open.playMode ?? 'solo') !== (fresh.playMode ?? 'solo')) return 'update';
+  return 'none';
+}

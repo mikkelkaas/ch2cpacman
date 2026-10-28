@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SETTINGS_DEFAULTS } from './settings';
-import { canChangePlayMode, groupEndMs, isGroupMode, isSharedDots, signalPendingMs, withGroupStart } from './group';
+import { canChangePlayMode, groupEndMs, isGroupMode, isSharedDots, settingsChange, signalPendingMs, withGroupStart } from './group';
 import type { GameSettings, Team } from './types';
 
 const signal = '2026-10-28T10:00:00.000Z';
@@ -69,5 +69,28 @@ describe('canChangePlayMode', () => {
     expect(canChangePlayMode({ groupStartedAt: signal }, [], 0)).toBe(false);
     expect(canChangePlayMode({ groupStartedAt: null }, [team(), team(signal)], 0)).toBe(false);
     expect(canChangePlayMode({ groupStartedAt: null }, [], 1)).toBe(false);
+  });
+});
+
+describe('settingsChange', () => {
+  const later = '2026-10-28T11:00:00.000Z';
+  it('is nothing when the mode and the signal are the same', () => {
+    expect(settingsChange({ playMode: 'together', groupStartedAt: signal }, { playMode: 'together', groupStartedAt: signal })).toBe('none');
+    expect(settingsChange({ playMode: 'shared' }, { playMode: 'shared', groupStartedAt: null })).toBe('none');
+    expect(settingsChange({}, { playMode: 'solo' })).toBe('none');
+  });
+  it('is an update when the signal comes', () => {
+    expect(settingsChange({ playMode: 'together', groupStartedAt: null }, { playMode: 'together', groupStartedAt: signal })).toBe('update');
+  });
+  it('is an update when the Spilform changes before the signal, either way', () => {
+    expect(settingsChange({ playMode: 'together' }, { playMode: 'solo' })).toBe('update');
+    expect(settingsChange({ playMode: 'together' }, { playMode: 'shared' })).toBe('update');
+    expect(settingsChange({}, { playMode: 'shared' })).toBe('update');
+  });
+  it('is a restart when the signal is cleared or replaced', () => {
+    expect(settingsChange({ playMode: 'shared', groupStartedAt: signal }, { playMode: 'shared', groupStartedAt: null })).toBe('restart');
+    expect(settingsChange({ playMode: 'shared', groupStartedAt: signal }, { playMode: 'shared' })).toBe('restart');
+    expect(settingsChange({ playMode: 'together', groupStartedAt: signal }, { playMode: 'together', groupStartedAt: later })).toBe('restart');
+    expect(settingsChange({ playMode: 'together', groupStartedAt: signal }, { playMode: 'solo', groupStartedAt: null })).toBe('restart');
   });
 });

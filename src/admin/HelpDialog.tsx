@@ -79,8 +79,11 @@ export default function HelpButton() {
                 </li>
                 <li>
                   <b>Nulstil alle</b> erstatter <b>Nulstil</b> på det enkelte hold i de to samlede former, for et hold kan ikke løbe om på
-                  et fælles ur. Den sletter signalet, hjemkomster, prikker, begivenheder og positioner. <b>Hjemme</b> og <b>Slet</b> virker
-                  stadig pr. hold. <i>Spilform</i> kan ikke ændres, når et hold er startet eller har spist en prik; tryk Nulstil alle først.
+                  et fælles ur. Den sletter signalet, holdenes starttider og hjemkomster, prikker, begivenheder og positioner, og inden for
+                  ca. 5 sekunder står telefonerne igen på kortet og venter på signalet. <b>Hjemme</b> og <b>Slet</b> virker stadig pr. hold.
+                  <i>Spilform</i> kan ikke ændres, når et hold er startet eller har spist en prik; tryk Nulstil alle først. Skifter du{' '}
+                  <i>Spilform</i>, mens telefonerne venter, slår det igennem på dem: en telefon, der venter på signalet, viser TRYK START
+                  inden for et par sekunder, og en telefon på TRYK START venter på signalet, når holdet trykker.
                 </li>
                 <li>
                   I fælles prikker vinder holdet med det tidligste tidspunkt på prikken. Har en telefon været uden net, kan den bagefter

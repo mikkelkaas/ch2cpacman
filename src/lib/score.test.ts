@@ -49,6 +49,12 @@ describe('scoreTeam', () => {
   it('rejects a capture before the start', () => {
     expect(scoreTeam(team, [cap('t1', 'p2', -1000)], pellets, settings).points).toBe(0);
   });
+  it('counts the in-window capture of a dot also captured before the start', () => {
+    // A rerun after a Nulstil whose old capture landed late: the earlier, pre-window one must not hide it.
+    const s = scoreTeam(team, [cap('t1', 'p2', -60_000), cap('t1', 'p2', 60_000)], pellets, settings);
+    expect(s.points).toBe(5);
+    expect(s.scored.map(x => x.capturedAt)).toEqual([iso(60_000)]);
+  });
   it('ignores duplicates, deleted pellets and other teams', () => {
     const s = scoreTeam(team, [cap('t1', 'p1', 1000), cap('t1', 'p1', 2000), cap('t1', 'gone', 3000), cap('t2', 'p2', 4000)], pellets, settings);
     expect(s.points).toBe(1);
