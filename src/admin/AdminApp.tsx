@@ -3,11 +3,14 @@ import { useNow } from '../hooks/useNow';
 import { usePolling } from '../hooks/usePolling';
 import { da, formatClock } from '../i18n/da';
 import { api } from '../lib/api';
+import { canChangePlayMode, isGroupMode, withGroupStart } from '../lib/group';
 import { rankTeams } from '../lib/score';
 import { generateTeamCode } from '../lib/teamCode';
 import { deleteFile, PHOTO_BUCKET } from '../lib/files';
 import { withDefaults } from '../lib/settings';
 import type { Capture, Game, GameEvent, LatLng, Pellet, PelletKind, Settings, Team } from '../lib/types';
+import { resetGame, startGroup } from './groupActions';
+import StartAllButton from './StartAllButton';
 import AdminMap from './AdminMap';
 import type { MapMode } from './AdminMap';
 import PelletsPanel from './PelletsPanel';
@@ -17,7 +20,7 @@ import TeamsPanel from './TeamsPanel';
 import HelpButton from './HelpDialog';
 import { Button } from './ui';
 
-const TEAM_COLORS = ['#dc2626', '#2563eb', '#16a34a', '#f59e0b', '#9333ea', '#0891b2', '#db2777', '#65a30d'];
+const TEAM_COLORS = ['#dc2626', '#2563eb', '#16a34a', '#f59e0b', '#9333ea', '#0891b2', '#db2777', '#65a30d', '#0f766e', '#7c2d12'];
 const POLL_MS = 10_000;
 export const DEFAULT_RADIUS_M = 5;
 
@@ -50,7 +53,9 @@ export default function AdminApp({ gameId }: { gameId: string }) {
   }, [gameId]);
 
   const loadLive = useCallback(async () => {
-    const [teamList, captureList, eventList] = await Promise.all([api.teams.list({ gameId }), api.captures.list({ gameId }), api.events.list({ gameId })]);
+    const [teamList, captureList, eventList, settingsList] = await Promise.all([api.teams.list({ gameId }), api.captures.list({ gameId }), api.events.list({ gameId }), api.settings.list({ gameId })]);
+    // The group signal can come from Postmandskab: the admin must see it within a poll.
+    if (settingsList[0]) setSettings(settingsList[0]);
     setTeams(teamList);
     setCaptures(captureList);
     setEvents(eventList);
@@ -68,16 +73,22 @@ export default function AdminApp({ gameId }: { gameId: string }) {
     }
   }, []);
 
-  const saveSettings = (next: Settings) =>
+  // Built on the record as the store has it now, never on local state: a leader may
+  // have started the group elsewhere, and a stale copy would write that away.
+  const saveSettings = (patch: Partial<Settings>) =>
     write(async () => {
-      setSettings(await api.settings.update(next));
+      const current = (await api.settings.list({ gameId }))[0] ?? settings;
+      if (!current) return;
+      const changed = (Object.keys(patch) as (keyof Settings)[]).some(k => JSON.stringify(patch[k]) !== JSON.stringify(current[k]));
+      // cruttelut answers 404 to a PUT that changes nothing.
+      setSettings(changed ? await api.settings.update({ ...current, ...patch }) : current);
     });
 
   const onMapClick = (latlng: LatLng) => {
     if (!settings || !pellets) return;
     if (mode === 'setStart') {
       setMode('idle');
-      void saveSettings({ ...settings, start: latlng });
+      void saveSettings({ start: latlng });
       return;
     }
     void write(async () => {
@@ -172,10 +183,27 @@ export default function AdminApp({ gameId }: { gameId: string }) {
       setTeams(list => list.filter(t => t._id !== team._id));
     });
 
+  const startAll = () =>
+    write(async () => {
+      setSettings(await startGroup(gameId));
+    });
+
+  const resetAll = () =>
+    write(async () => {
+      const result = await resetGame(gameId);
+      setTeams(result.teams);
+      setSettings(result.settings);
+      setCaptures([]);
+      setEvents([]);
+    });
+
+  // In a group mode the start is the group signal; the raw `teams` stay for writes.
+  const effectiveTeams = useMemo(() => (settings ? teams.map(t => withGroupStart(t, settings)) : teams), [teams, settings]);
+
   // `now` is a dependency: a team still out after the end loses points as the clock runs.
   const scores = useMemo(
-    () => (settings && pellets ? rankTeams(teams, captures, pellets, settings, events, now) : []),
-    [teams, captures, pellets, settings, events, now],
+    () => (settings && pellets ? rankTeams(effectiveTeams, captures, pellets, settings, events, now) : []),
+    [effectiveTeams, captures, pellets, settings, events, now],
   );
 
   const shell = (children: React.ReactNode) => <div className="min-h-full bg-gray-100 text-gray-900 font-body">{children}</div>;
@@ -206,6 +234,7 @@ export default function AdminApp({ gameId }: { gameId: string }) {
     );
   }
 
+  const modeChangeable = canChangePlayMode(settings, teams, captures.length);
   const error = writeError ? da.saveFailed : livePoll.error || staticPoll.error ? da.fetchFailed : null;
 
   return shell(
@@ -252,9 +281,10 @@ export default function AdminApp({ gameId }: { gameId: string }) {
           <AdminMap pellets={pellets} start={settings.start} selectedId={selectedId} mode={mode} onMapClick={onMapClick} onSelect={setSelectedId} onMovePellet={movePellet} />
         </div>
         <div className="flex flex-col gap-4 p-4">
+          <StartAllButton settings={withDefaults(settings)} pelletCount={pellets.length} teamCount={teams.length} onStart={startAll} />
           <Scoreboard scores={scores} />
-          <TeamsPanel teams={teams} settings={withDefaults(settings)} now={now} onAdd={addTeams} onReset={resetTeam} onMarkHome={markHome} onDelete={deleteTeam} />
-          <SettingsPanel settings={settings} mode={mode} onSave={saveSettings} onSetMode={setMode} />
+          <TeamsPanel teams={effectiveTeams} settings={withDefaults(settings)} now={now} onAdd={addTeams} onReset={resetTeam} onMarkHome={markHome} onDelete={deleteTeam} perTeamReset={!isGroupMode(settings)} canResetAll={!modeChangeable} onResetAll={resetAll} />
+          <SettingsPanel settings={settings} playModeLocked={!modeChangeable} mode={mode} onSave={saveSettings} onSetMode={setMode} />
           <PelletsPanel pellets={pellets} start={settings.start} selectedId={selectedId} newPoints={newPoints} onNewPointsChange={setNewPoints} newKind={newKind} onNewKindChange={setNewKind} onSelect={setSelectedId} onSave={savePellet} onDelete={deletePellet} />
         </div>
       </div>

@@ -24,6 +24,8 @@ interface Props {
   /** Ghosts are frightened. */
   power?: boolean;
   ghostBanner?: GhostBanner | null;
+  /** Fælles prikker: the team that was first to a dot this team ate. Shown in the ghost banner's place. */
+  firstBanner?: string | null;
   /** The latest fix is too inaccurate to count. */
   weakSignal?: boolean;
   /** Runner only, back inside the home radius before the end: end the run here. */
@@ -44,7 +46,7 @@ function useRollingNumber(target: number): number {
   return shown;
 }
 
-export default function Hud({ remainingMs, lateMs = 0, latePoints = 0, homeDistanceM = null, points, pendingCount, onShowRules, doubleMs = 0, danger = false, power = false, ghostBanner = null, weakSignal = false, onMarkHome, staleForMs = null }: Props) {
+export default function Hud({ remainingMs, lateMs = 0, latePoints = 0, homeDistanceM = null, points, pendingCount, onShowRules, doubleMs = 0, danger = false, power = false, ghostBanner = null, firstBanner = null, weakSignal = false, onMarkHome, staleForMs = null }: Props) {
   const t = useT();
   const shownPoints = useRollingNumber(points);
   const late = lateMs > 0;
@@ -97,7 +99,13 @@ export default function Hud({ remainingMs, lateMs = 0, latePoints = 0, homeDista
           {latePoints > 0 && <div className="font-arcade text-sm text-ghost-red bg-black/80 px-3 py-1">{t.latePoints(latePoints)}</div>}
         </div>
       )}
-      {ghostBanner && (
+      {firstBanner ? (
+        <div className="absolute inset-x-0 top-1/3 z-[460] flex justify-center pointer-events-none px-3 text-center">
+          <div className="font-arcade text-2xl drop-in text-ghost-orange" style={{ textShadow: '0 0 8px currentColor' }}>
+            {t.firstBanner(firstBanner)}
+          </div>
+        </div>
+      ) : ghostBanner && (
         <div className="absolute inset-x-0 top-1/3 z-[460] flex justify-center pointer-events-none">
           <div className={`font-arcade text-2xl drop-in ${ghostBanner.type === 'ghost_caught' ? 'text-ghost-red' : 'text-ghost-cyan'}`} style={{ textShadow: '0 0 8px currentColor' }}>
             {ghostBanner.type === 'ghost_caught' ? t.caughtBanner(-ghostBanner.points) : t.ghostEatenBanner(ghostBanner.points)}

@@ -21,9 +21,11 @@ interface Props {
   homeRadiusM?: number | null;
   /** Spectator only: the picture is old. Runner and ghosts go translucent, pellets stay. */
   faded?: boolean;
+  /** Fælles prikker: pellet id to the colour of the team that owns it. Such a dot flashes in that colour as it goes. */
+  takenColors?: ReadonlyMap<string, string>;
 }
 
-export default function RunnerMap({ theme, pellets, eatenIds, start, fix, ghosts = [], ghostMode = 'normal', shielded = false, dimmed = false, homeRadiusM = null, faded = false }: Props) {
+export default function RunnerMap({ theme, pellets, eatenIds, start, fix, ghosts = [], ghostMode = 'normal', shielded = false, dimmed = false, homeRadiusM = null, faded = false, takenColors }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const pelletLayers = useRef(new Map<string, L.Marker>());
@@ -66,11 +68,15 @@ export default function RunnerMap({ theme, pellets, eatenIds, start, fix, ghosts
       if (eaten) {
         if (existing && !eatenShown.current.has(pellet._id)) {
           eatenShown.current.add(pellet._id);
-          existing.setIcon(pelletIcon(pellet, 'eaten'));
-          window.setTimeout(() => {
-            existing.remove();
-            pelletLayers.current.delete(pellet._id);
-          }, 320);
+          const takenColor = takenColors?.get(pellet._id);
+          existing.setIcon(takenColor ? pelletIcon(pellet, 'taken', `--taken-color:${takenColor}`) : pelletIcon(pellet, 'eaten'));
+          window.setTimeout(
+            () => {
+              existing.remove();
+              pelletLayers.current.delete(pellet._id);
+            },
+            takenColor ? 800 : 320,
+          );
         }
         continue;
       }
@@ -87,7 +93,7 @@ export default function RunnerMap({ theme, pellets, eatenIds, start, fix, ghosts
         fitted.current = true;
       }
     }
-  }, [pellets, eatenIds, start]);
+  }, [pellets, eatenIds, start, takenColors]);
 
   useEffect(() => {
     const map = mapRef.current;

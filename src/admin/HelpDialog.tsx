@@ -64,6 +64,35 @@ export default function HelpButton() {
               </ol>
             </Section>
 
+            <Section title="Samlet start og fælles prikker">
+              <p>
+                <i>Spilform</i> i Indstillinger vælger, hvordan holdene løber. <b>Hver for sig</b> er det, der står ovenfor: hvert hold
+                trykker TRYK START og har sit eget ur. <b>Samlet start</b> lader alle hold i spillet løbe på samme ur: ingen kan starte
+                selv, og du giver signalet med <b>Start alle</b> på admin-siden eller på Postmandskab. <b>Samlet start, fælles prikker</b> er
+                det samme, men en prik, et hold har spist, er væk for de andre. Så gælder det om at nå frem først.
+              </p>
+              <ul className="list-disc pl-5 space-y-1 mt-2">
+                <li>
+                  <b>Start alle</b> kan trykkes, når der er et startpunkt og mindst én prik. Du bliver spurgt, inden signalet går. Før
+                  signalet venter telefonerne på kortet; bagefter går de i gang inden for et par sekunder. En telefon, der tændes eller
+                  genindlæses efter signalet, hopper direkte ind i løbet med den tid, der er tilbage.
+                </li>
+                <li>
+                  <b>Nulstil alle</b> erstatter <b>Nulstil</b> på det enkelte hold i de to samlede former, for et hold kan ikke løbe om på
+                  et fælles ur. Den sletter signalet, holdenes starttider og hjemkomster, prikker, begivenheder og positioner, og inden for
+                  ca. 5 sekunder står telefonerne igen på kortet og venter på signalet. <b>Hjemme</b> og <b>Slet</b> virker stadig pr. hold.
+                  <i>Spilform</i> kan ikke ændres, når et hold er startet eller har spist en prik; tryk Nulstil alle først. Skifter du{' '}
+                  <i>Spilform</i>, mens telefonerne venter, slår det igennem på dem: en telefon, der venter på signalet, viser TRYK START
+                  inden for et par sekunder, og en telefon på TRYK START venter på signalet, når holdet trykker.
+                </li>
+                <li>
+                  I fælles prikker vinder holdet med det tidligste tidspunkt på prikken. Har en telefon været uden net, kan den bagefter
+                  tage en prik fra et andet hold, så stillingen kan flytte sig, til alle har sendt op. En telefon, der viser GAME OVER, kan
+                  derfor også få ændret sin score; den endelige stilling står her. Power og Dobbelt virker kun for holdet, der spiste prikken.
+                </li>
+              </ul>
+            </Section>
+
             <Section title="Priktyper">
               <ul className="list-disc pl-5 space-y-1">
                 <li>

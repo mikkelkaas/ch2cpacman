@@ -18,9 +18,12 @@ export const playerEn: PlayerStrings = {
   rules: (s: RulesInput) => [
     { icon: '⏱', text: `You have ${s.minutes} minutes.` },
     { icon: '•', text: 'The map shows dots. Run to them.' },
-    { icon: '🗺', text: 'Before you start, you can see the map and the dots. Make a plan, the time only starts when you press START.' },
+    s.groupStart
+      ? { icon: '🗺', text: "Before the start, you can see the map and the dots. Make a plan, the time starts on the leader's signal, for every team at once." }
+      : { icon: '🗺', text: 'Before you start, you can see the map and the dots. Make a plan, the time only starts when you press START.' },
     { icon: 'ᗧ', text: 'The phone eats a dot when you are close enough. No need to tap anything.' },
     { icon: '★', text: 'The farther away, the more points.' },
+    ...(s.sharedDots ? [{ icon: '👥', text: 'The dots are shared with the other teams. The team that reaches a dot first gets it, and then it is gone for everyone else.' }] : []),
     ...(s.ghosts ? [{ icon: '👻', text: `Ghosts are hunting you. If they catch you, you lose ${s.penalty} points. Run!` }] : []),
     ...(s.ghosts ? [{ icon: '🧱', text: 'Ghosts go straight through houses, fences and bushes. You cannot hide behind anything.' }] : []),
     ...(s.ghosts && s.hungry ? [{ icon: '🔥', text: 'The longer a ghost chases you without catching you, the faster it gets.' }] : []),
@@ -44,6 +47,7 @@ export const playerEn: PlayerStrings = {
   markHomeConfirm: 'Are you home and want to stop now? The ghosts can no longer catch you, but you can no longer eat dots either.',
   caughtBanner: (points: number) => `CAUGHT! -${points}`,
   ghostEatenBanner: (points: number) => `+${points}`,
+  firstBanner: (team: string) => `${team} GOT THERE FIRST`,
   ghostsCaught: (n: number) => (n === 1 ? 'caught once' : `caught ${n} times`),
   ghostsEaten: (n: number) => (n === 1 ? '1 ghost eaten' : `${n} ghosts eaten`),
   next: 'NEXT',
@@ -56,6 +60,8 @@ export const playerEn: PlayerStrings = {
   uploadingPhoto: 'SENDING…',
   photoFailed: 'Could not send the photo. Try again, or skip.',
   readyQuestion: 'Look at the map and make a plan. The time only starts when you press.',
+  waitingForSignal: 'Look at the map and make a plan. The time starts when the leader gives the signal.',
+  signalIn: (s: number) => `START IN ${s}`,
   pressStart: 'PRESS START',
   starting: 'STARTING…',
   startFailed: 'Could not start, try again',
@@ -73,6 +79,7 @@ export const playerEn: PlayerStrings = {
   locationWaiting: 'Finding your location…',
   finalScore: 'YOUR SCORE',
   wellPlayed: 'Well run! Go back to the station.',
+  finalOnScoreboard: 'The final standings are on the board at the station.',
   leaveGame: 'Leave the game',
   leaveGameConfirm: 'Leave the game? The phone forgets the team so a new team can join. Your points are saved.',
   leaveWaitingUpload: 'Sending the last points…',

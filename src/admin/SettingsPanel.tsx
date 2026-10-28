@@ -1,26 +1,28 @@
 import { useEffect, useState } from 'react';
 import { da } from '../i18n/da';
 import { withDefaults } from '../lib/settings';
-import { MAP_THEMES } from '../lib/types';
-import type { GameSettings, MapTheme, Settings } from '../lib/types';
+import { MAP_THEMES, PLAY_MODES } from '../lib/types';
+import type { GameSettings, MapTheme, PlayMode, Settings } from '../lib/types';
 import type { MapMode } from './AdminMap';
 import { Button, inputClass, Panel } from './ui';
 
 interface Props {
   settings: Settings;
+  /** Teams have started or captured: the play mode can't change until Nulstil alle. */
+  playModeLocked: boolean;
   mode: MapMode;
-  onSave: (settings: Settings) => Promise<void>;
+  onSave: (patch: Partial<Settings>) => Promise<void>;
   onSetMode: (mode: MapMode) => void;
 }
 
-export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Props) {
+export default function SettingsPanel({ settings, playModeLocked, mode, onSave, onSetMode }: Props) {
   const [minutes, setMinutes] = useState(String(settings.phaseMinutes));
   useEffect(() => setMinutes(String(settings.phaseMinutes)), [settings.phaseMinutes]);
 
   const commit = () => {
     const value = Math.min(120, Math.max(1, Math.round(Number(minutes) || settings.phaseMinutes)));
     setMinutes(String(value));
-    if (value !== settings.phaseMinutes) void onSave({ ...settings, phaseMinutes: value });
+    if (value !== settings.phaseMinutes) void onSave({ phaseMinutes: value });
   };
 
   const arming = mode === 'setStart';
@@ -28,10 +30,10 @@ export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Pro
   // Speeds are stored in m/s and shown in km/h, which leaders read more easily.
   const KMH = 3.6;
   const speedField = (key: 'ghostSpeedMps' | 'ghostMaxSpeedMps', label: string) => (
-    <NumberField key={key} label={label} value={Math.round(full[key] * KMH * 10) / 10} min={0.1} step={0.5} onCommit={value => void onSave({ ...settings, [key]: value / KMH })} />
+    <NumberField key={key} label={label} value={Math.round(full[key] * KMH * 10) / 10} min={0.1} step={0.5} onCommit={value => void onSave({ [key]: value / KMH })} />
   );
-  const numberField = (key: keyof Omit<GameSettings, '_id' | 'gameId' | 'start' | 'phaseMinutes' | 'mapTheme' | 'teamPhoto'>, label: string, min: number, step = 1) => (
-    <NumberField key={key} label={label} value={full[key]} min={min} step={step} onCommit={value => void onSave({ ...settings, [key]: value })} />
+  const numberField = (key: keyof Omit<GameSettings, '_id' | 'gameId' | 'start' | 'phaseMinutes' | 'mapTheme' | 'teamPhoto' | 'playMode' | 'groupStartedAt'>, label: string, min: number, step = 1) => (
+    <NumberField key={key} label={label} value={full[key]} min={min} step={step} onCommit={value => void onSave({ [key]: value })} />
   );
 
   return (
@@ -60,8 +62,19 @@ export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Pro
       </div>
       {arming && <p className="text-amber-700 text-sm">{da.setStartHint}</p>}
       <label className="flex items-center justify-between gap-3 text-sm text-gray-700">
+        {da.playMode}
+        <select value={full.playMode} disabled={playModeLocked} onChange={e => void onSave({ playMode: e.target.value as PlayMode })} className={`${inputClass} disabled:bg-gray-100 disabled:text-gray-500`}>
+          {PLAY_MODES.map(m => (
+            <option key={m} value={m}>
+              {da.playModes[m]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {playModeLocked && <p className="text-gray-500 text-xs">{da.playModeLocked}</p>}
+      <label className="flex items-center justify-between gap-3 text-sm text-gray-700">
         {da.mapTheme}
-        <select value={full.mapTheme} onChange={e => void onSave({ ...settings, mapTheme: e.target.value as MapTheme })} className={inputClass}>
+        <select value={full.mapTheme} onChange={e => void onSave({ mapTheme: e.target.value as MapTheme })} className={inputClass}>
           {MAP_THEMES.map(t => (
             <option key={t} value={t}>
               {da.mapThemes[t]}
@@ -71,7 +84,7 @@ export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Pro
       </label>
       <label className="flex items-center justify-between gap-3 text-sm text-gray-700">
         {da.teamPhotoSetting}
-        <input type="checkbox" checked={full.teamPhoto} onChange={e => void onSave({ ...settings, teamPhoto: e.target.checked })} className="w-4 h-4" />
+        <input type="checkbox" checked={full.teamPhoto} onChange={e => void onSave({ teamPhoto: e.target.checked })} className="w-4 h-4" />
       </label>
       <h3 className="text-xs font-semibold text-gray-500 uppercase pt-2">{da.ghostSettings}</h3>
       {numberField('ghostCount', da.ghostCount, 0)}

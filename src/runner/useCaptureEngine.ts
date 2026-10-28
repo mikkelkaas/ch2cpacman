@@ -21,6 +21,18 @@ interface Options {
   initialCaptures: readonly Capture[];
   /** Called with each pellet the moment it is eaten, for power and Dobbelt effects. */
   onEaten?: (pellet: Pellet, atMs: number) => void;
+  /** Fælles prikker: dots another team owns. Never eaten here. */
+  blockedIds?: ReadonlySet<string>;
+  /** Fælles prikker: who owns each dot, so only this team's own dots score. */
+  owners?: ReadonlyMap<string, string>;
+}
+
+/** This run's capture times on mount, pellet id to ISO time: the server's, then the ones still queued. */
+export function initialCaptureTimes(initialCaptures: readonly Capture[], team: Team): Map<string, string> {
+  const m = new Map<string, string>();
+  for (const c of dedupeCaptures(ofCurrentRun(initialCaptures, team, c => c.capturedAt))) m.set(c.pelletId, c.capturedAt);
+  for (const q of ofCurrentRun(pending(), team, q => q.capturedAt)) if (!m.has(q.pelletId)) m.set(q.pelletId, q.capturedAt);
+  return m;
 }
 
 /**
@@ -29,7 +41,7 @@ interface Options {
  * locally first and uploads in the background. The phone's own score counts
  * queued captures, so a dead spot never costs points.
  */
-export function useCaptureEngine({ active, fix, pellets, team, settings, initialEatenIds, initialCaptures, onEaten }: Options) {
+export function useCaptureEngine({ active, fix, pellets, team, settings, initialEatenIds, initialCaptures, onEaten, blockedIds, owners }: Options) {
   const [eatenIds, setEatenIds] = useState<ReadonlySet<string>>(initialEatenIds);
   const [pendingCount, setPendingCount] = useState(() => pending().length);
   const [lastEaten, setLastEaten] = useState<Pellet | null>(null);
@@ -40,13 +52,10 @@ export function useCaptureEngine({ active, fix, pellets, team, settings, initial
   onEatenRef.current = onEaten;
   /** The last usable fix of this run, the start of the line to the next one. */
   const prevFixRef = useRef<Fix | null>(null);
+  const blockedRef = useRef(blockedIds);
+  blockedRef.current = blockedIds;
   // Capture times, so the Dobbelt multiplier on screen matches the scoreboard.
-  const [captureTimes, setCaptureTimes] = useState<Map<string, string>>(() => {
-    const m = new Map<string, string>();
-    for (const c of dedupeCaptures(ofCurrentRun(initialCaptures, team, c => c.capturedAt))) m.set(c.pelletId, c.capturedAt);
-    for (const q of ofCurrentRun(pending(), team, q => q.capturedAt)) if (!m.has(q.pelletId)) m.set(q.pelletId, q.capturedAt);
-    return m;
-  });
+  const [captureTimes, setCaptureTimes] = useState<Map<string, string>>(() => initialCaptureTimes(initialCaptures, team));
 
   const upload = useCallback(async () => {
     if (draining.current) return;
@@ -74,7 +83,8 @@ export function useCaptureEngine({ active, fix, pellets, team, settings, initial
     const prev = prevFixRef.current;
     const fresh = !prev || fix.at > prev.at;
     if (fresh) prevFixRef.current = fix;
-    const hits = pelletsAlong(fresh ? prev : null, fix, pellets, eatenRef.current);
+    const blocked = blockedRef.current;
+    const hits = pelletsAlong(fresh ? prev : null, fix, pellets, blocked?.size ? new Set([...eatenRef.current, ...blocked]) : eatenRef.current);
     if (hits.length === 0) return;
     const next = new Set(eatenRef.current);
     const nowMs = Date.now();
@@ -119,6 +129,9 @@ export function useCaptureEngine({ active, fix, pellets, team, settings, initial
     [...captureTimes.entries()].map(([pelletId, at]) => ({ _id: pelletId, teamId: team._id, pelletId, capturedAt: at, lat: 0, lng: 0, clientId: pelletId })),
     pellets,
     settings,
+    [],
+    Date.now(),
+    owners,
   ).pelletPoints;
 
   return { eatenIds, points, pendingCount, lastEaten, captureTimes, setCaptureTimes };

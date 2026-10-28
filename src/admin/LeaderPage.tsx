@@ -3,16 +3,19 @@ import { useNow } from '../hooks/useNow';
 import { usePolling } from '../hooks/usePolling';
 import { da, formatClock } from '../i18n/da';
 import { api } from '../lib/api';
+import { isSharedDots, withGroupStart } from '../lib/group';
 import { HEARTBEAT_MS } from '../lib/heartbeat';
 import type { Heartbeat } from '../lib/heartbeat';
 import { LEADER_STATUSES, leaderStatus, teamPositions } from '../lib/leader';
 import type { LeaderStatus } from '../lib/leader';
 import { formatCountdown, remainingMs } from '../lib/phase';
-import { scoreTeam } from '../lib/score';
+import { dotOwners, scoreTeam } from '../lib/score';
 import { withDefaults } from '../lib/settings';
 import type { Capture, Game, GameEvent, Pellet, Settings, Team } from '../lib/types';
 import LeaderMap from './LeaderMap';
+import { startGroup } from './groupActions';
 import QrDialog from './QrDialog';
+import StartAllButton from './StartAllButton';
 import { Button } from './ui';
 
 /** Leaders hand out QR codes from here, so a team started elsewhere shows up quickly. */
@@ -39,6 +42,7 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
   const [view, setView] = useState<View>('list');
   const [showDots, setShowDots] = useState(true);
   const [beats, setBeats] = useState<Heartbeat[]>([]);
+  const [startFailed, setStartFailed] = useState(false);
   const now = useNow(1000);
 
   const loadStatic = useCallback(async () => {
@@ -69,12 +73,20 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
   const beatPoll = usePolling(loadBeats, HEARTBEAT_MS, view === 'map');
 
   const full = useMemo(() => (settings ? withDefaults(settings) : null), [settings]);
+  // In a group mode the start is the group signal, whatever the stored record says.
+  const effectiveTeams = useMemo(() => (full ? teams.map(t => withGroupStart(t, full)) : teams), [teams, full]);
+  // Shared dots: who ate which dot, once for the whole game.
+  const owners = useMemo(
+    () => (full && pellets && isSharedDots(full) ? dotOwners(effectiveTeams, captures, pellets, full) : undefined),
+    [effectiveTeams, captures, pellets, full],
+  );
+  const freePellets = useMemo(() => (pellets && owners ? pellets.filter(p => !owners.has(p._id)) : pellets), [pellets, owners]);
   const rows = useMemo(() => {
     if (!full || !pellets) return [];
-    return teams
-      .map(team => ({ team, status: leaderStatus(team, full, now), points: scoreTeam(team, captures, pellets, full, events, now).points }))
+    return effectiveTeams
+      .map(team => ({ team, status: leaderStatus(team, full, now), points: scoreTeam(team, captures, pellets, full, events, now, owners).points }))
       .sort((a, b) => a.team.name.localeCompare(b.team.name, 'da'));
-  }, [teams, captures, events, pellets, full, now]);
+  }, [effectiveTeams, captures, events, pellets, full, now, owners]);
   const running = useMemo(() => rows.filter(r => r.status === 'running').map(r => r.team), [rows]);
   const positions = useMemo(() => teamPositions(running, beats, now), [running, beats, now]);
   const clocks = useMemo(() => {
@@ -118,7 +130,7 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
 
   const shown = filter === 'all' ? rows : rows.filter(r => r.status === filter);
   const count = (f: Filter) => (f === 'all' ? rows.length : rows.filter(r => r.status === f).length);
-  const error = livePoll.error || staticPoll.error || (view === 'map' && beatPoll.error) ? da.fetchFailed : null;
+  const error = startFailed ? da.saveFailed : livePoll.error || staticPoll.error || (view === 'map' && beatPoll.error) ? da.fetchFailed : null;
   const unplaced = running.filter(t => !positions.some(p => p.team._id === t._id));
 
   return shell(
@@ -143,6 +155,21 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
             </button>
           ))}
         </div>
+        <StartAllButton
+          settings={full}
+          pelletCount={pellets.length}
+          teamCount={teams.length}
+          onStart={async () => {
+            setStartFailed(false);
+            try {
+              await startGroup(gameId);
+            } catch {
+              setStartFailed(true);
+              return;
+            }
+            await livePoll.reload();
+          }}
+        />
         {view === 'list' && (
         <div className="flex flex-wrap gap-2">
           {[...LEADER_STATUSES, 'all' as const].map(f => (
@@ -171,6 +198,7 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
             <button
               className="underline"
               onClick={() => {
+                setStartFailed(false);
                 void livePoll.reload();
                 if (view === 'map') void beatPoll.reload();
               }}
@@ -185,7 +213,7 @@ export default function LeaderPage({ gameId }: { gameId: string }) {
         <main className="flex-1 min-h-0 flex flex-col">
           {unplaced.length > 0 && <p className="px-4 pb-2 text-sm text-gray-500">{da.noPosition(unplaced.map(t => `${t.name} (${clocks.get(t._id)})`).join(', '))}</p>}
           <div className="flex-1 min-h-0">
-            <LeaderMap pellets={pellets} start={full.start} positions={positions} clocks={clocks} showDots={showDots} />
+            <LeaderMap pellets={freePellets ?? pellets} start={full.start} positions={positions} clocks={clocks} showDots={showDots} />
           </div>
         </main>
       )}

@@ -3,6 +3,7 @@ import type { Fix } from '../hooks/useGeolocation';
 import { api } from '../lib/api';
 import { isUsableFix } from '../lib/fix';
 import { isHome } from '../lib/late';
+import { withGroupStart } from '../lib/group';
 import type { GameSettings, Team } from '../lib/types';
 
 const RETRY_MS = 5000;
@@ -35,6 +36,8 @@ export function useReturnHome({ active, out, fix, team, settings, onTeamChange }
   const [homeAt, setHomeAt] = useState<string | null>(null);
   const teamRef = useRef(team);
   teamRef.current = team;
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
   const onTeamChangeRef = useRef(onTeamChange);
   onTeamChangeRef.current = onTeamChange;
 
@@ -74,7 +77,8 @@ export function useReturnHome({ active, out, fix, team, settings, onTeamChange }
     const attempt = async () => {
       try {
         const current = (await api.teams.list({ _id: teamRef.current._id }))[0] ?? teamRef.current;
-        const sameRun = current.startedAt === teamRef.current.startedAt;
+        // teamRef holds the effective team; the PUT goes on the raw record.
+        const sameRun = withGroupStart(current, settingsRef.current).startedAt === teamRef.current.startedAt;
         const leaderFirst = !!current.returnedAt && current.returnedAt <= homeAt;
         const updated = !sameRun || leaderFirst ? current : await api.teams.update({ ...current, returnedAt: homeAt });
         if (!cancelled) onTeamChangeRef.current(updated);

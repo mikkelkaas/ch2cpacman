@@ -56,7 +56,10 @@ export default function PhotoScreen({ team, onDone, onSkip }: Props) {
     try {
       const key = teamPhotoKey(team);
       await putFile(PHOTO_BUCKET, key, blob, 'image/jpeg');
-      const saved = await api.teams.update({ ...team, photoKey: key });
+      // The record as the store has it now: in a group game the run may have
+      // started meanwhile, and the prop is the effective team, not the record.
+      const current = (await api.teams.list({ _id: team._id }))[0] ?? team;
+      const saved = await api.teams.update({ ...current, photoKey: key });
       sound.blip();
       onDone(saved);
     } catch {

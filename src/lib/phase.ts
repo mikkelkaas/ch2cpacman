@@ -19,6 +19,8 @@ export type PhaseState = 'idle' | 'running' | 'late' | 'over';
 
 export function phaseState(team: Pick<Team, 'startedAt' | 'returnedAt'>, phaseMinutes: number, nowMs: number, rule?: LateRule): PhaseState {
   if (!team.startedAt) return 'idle';
+  // A group signal still in the future: the countdown has not begun.
+  if (nowMs < Date.parse(team.startedAt)) return 'idle';
   if (isHomeThisRun(team)) return 'over';
   const end = phaseEndMs(team.startedAt, phaseMinutes);
   if (nowMs < end) return 'running';

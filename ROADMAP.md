@@ -9,7 +9,8 @@ radius, power pellets, Dobbelt, virtual ghosts, several games, five map
 themes, an admin with standings, an in-app guide, a GPS accuracy guard, QR
 join codes on a phone, a printable team sheet, a team photo before the start
 (stored in cruttelut's file bucket), a late-home penalty with a "run home"
-mode on the phone and hungry ghosts that speed up until they catch someone.
+mode on the phone, hungry ghosts that speed up until they catch someone, and
+group starts with shared dots for many teams at once.
 See `README.md`.
 
 ## Recommended next
@@ -66,9 +67,6 @@ leaders.
 
 ## Beyond one station
 
-- **Two teams at once, shared dots** (M). A dot eaten by one patrol vanishes
-  for the other. Polling the other team's captures every few seconds is within
-  what cruttelut can take for two phones.
 - **Human ghost** (M). A leader's phone posts its position; runners see it and
   are caught within 10 m. Real terrain, real chase, needs a leader and signal.
 

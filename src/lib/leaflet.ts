@@ -62,7 +62,8 @@ export function pelletSizePx(pellet: Pellet): number {
   return Math.min(30, 12 + pellet.points * 4);
 }
 
-export function pelletIcon(pellet: Pellet, extraClass = ''): L.DivIcon {
+/** `style`: extra inline CSS on the dot, e.g. the `--taken-color` of a dot another team owns. */
+export function pelletIcon(pellet: Pellet, extraClass = '', style = ''): L.DivIcon {
   const size = pelletSizePx(pellet);
   const kind = pellet.kind ?? 'normal';
   const label = kind === 'double' ? `×2 ${pellet.points}` : `${pellet.points}`;
@@ -70,7 +71,7 @@ export function pelletIcon(pellet: Pellet, extraClass = ''): L.DivIcon {
     className: '',
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
-    html: `<div class="pellet-dot kind-${kind} ${extraClass}" style="width:${size}px;height:${size}px"><span class="pellet-label">${label}</span></div>`,
+    html: `<div class="pellet-dot kind-${kind} ${extraClass}" style="width:${size}px;height:${size}px;${style}"><span class="pellet-label">${label}</span></div>`,
   });
 }
 

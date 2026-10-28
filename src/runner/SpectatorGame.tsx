@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import ErrorBar from '../components/ErrorBar';
 import LanguageSwitch from '../components/LanguageSwitch';
 import { useNow } from '../hooks/useNow';
@@ -7,6 +7,7 @@ import { useT } from '../i18n/LangProvider';
 import { photoUrl } from '../lib/files';
 import { haversineM } from '../lib/geo';
 import { isFrightened } from '../lib/ghosts';
+import { groupEndMs, isGroupMode, isSharedDots, signalPendingMs } from '../lib/group';
 import { isStale, staleForMs } from '../lib/heartbeat';
 import { lateMs, phaseState, remainingMs } from '../lib/phase';
 import { captureTimesOf, doubleRemainingMs, ofCurrentRun, scoreTeam } from '../lib/score';
@@ -18,9 +19,11 @@ import GameOver from './GameOver';
 import Hud from './Hud';
 import RunnerMap from './RunnerMap';
 import type { GhostBanner } from './useGhosts';
+import { useLostDotBanner, useSharedDots } from './useSharedDots';
 import { useSpectate } from './useSpectate';
 
 interface Props {
+  /** The raw record; in a group game the spectator applies the signal itself. */
   team: Team;
   settings: GameSettings;
   pellets: Pellet[];
@@ -34,14 +37,15 @@ interface Props {
  * record for the clock, captures and events for the score, and the runner
  * phone's heartbeat for the runner dot and the ghosts. Reads only.
  */
-export default function SpectatorGame({ team: initialTeam, settings, pellets, captures: initialCaptures, events: initialEvents, onLeaveTeam }: Props) {
+export default function SpectatorGame({ team: initialTeam, settings: initialSettings, pellets, captures: initialCaptures, events: initialEvents, onLeaveTeam }: Props) {
   const t = useT();
   const now = useNow(250);
   // Stop polling once the game is over; a one-poll lag before this takes
   // effect is fine, so the flag is derived from the previous render's team.
   const pollingEnabled = useRef(true);
-  const { team, captures, events, heartbeat, error, retry } = useSpectate(
+  const { team, settings, captures, events, heartbeat, error, retry } = useSpectate(
     { team: initialTeam, captures: initialCaptures, events: initialEvents },
+    initialSettings,
     pollingEnabled.current,
   );
   const rule = { lateStepS: settings.lateStepS, latePenaltyPerStep: settings.latePenaltyPerStep, latePenaltyMax: settings.latePenaltyMax };
@@ -63,11 +67,29 @@ export default function SpectatorGame({ team: initialTeam, settings, pellets, ca
     return () => window.removeEventListener('pointerdown', unlock);
   }, []);
 
+  const groupMode = isGroupMode(settings);
+  const signalMs = signalPendingMs(settings, now);
+  const captureTimes = useMemo(() => captureTimesOf(ofCurrentRun(captures, team, c => c.capturedAt), team._id), [captures, team]);
+  // Fælles prikker: the same owners as the runner phone, from the team's
+  // uploaded captures, polled on the same rule until no score can change.
+  const shared = isSharedDots(settings);
+  const endMs = groupEndMs(settings);
+  const sharedDots = useSharedDots({
+    enabled: shared && (state === 'running' || state === 'late' || (state === 'over' && endMs !== null && now < endMs)),
+    settings,
+    pellets,
+    ownTeamId: team._id,
+    ownCaptures: captureTimes,
+  });
+  const firstBanner = useLostDotBanner(sharedDots.lost, sharedDots.loaded, shared && (state === 'running' || state === 'late'));
+
   // Score exactly as the admin and the runner do, from timestamps.
-  const score = scoreTeam(team, captures, pellets, settings, events, now);
-  const captureTimes = captureTimesOf(ofCurrentRun(captures, team, c => c.capturedAt), team._id);
-  const eatenIds = new Set(captureTimes.keys());
-  const doubleMs = doubleRemainingMs(captureTimes, pellets, settings.doubleSeconds, now);
+  const score = scoreTeam(team, captures, pellets, settings, events, now, shared ? sharedDots.owners : undefined);
+  // A Dobbelt another team was first to stops doubling.
+  const ownedTimes = shared ? new Map([...captureTimes].filter(([id]) => !sharedDots.blockedIds.has(id))) : captureTimes;
+  const doubleMs = doubleRemainingMs(ownedTimes, pellets, settings.doubleSeconds, now);
+  // Another team's dots are drawn as gone.
+  const eatenIds = useMemo(() => new Set(shared ? [...captureTimes.keys(), ...sharedDots.blockedIds] : captureTimes.keys()), [shared, captureTimes, sharedDots.blockedIds]);
 
   // The runner phone's picture, and how old it is.
   const stale = isStale(heartbeat, now);
@@ -111,7 +133,7 @@ export default function SpectatorGame({ team: initialTeam, settings, pellets, ca
     }
   }, [now, state, stale, frightened, nearest]);
 
-  const eatenCount = pellets.filter(p => eatenIds.has(p._id)).length;
+  const eatenCount = pellets.filter(p => ownedTimes.has(p._id)).length;
   const running = state === 'running' || state === 'late';
 
   return (
@@ -120,6 +142,7 @@ export default function SpectatorGame({ team: initialTeam, settings, pellets, ca
         theme={settings.mapTheme}
         pellets={pellets}
         eatenIds={eatenIds}
+        takenColors={shared ? sharedDots.takenColors : undefined}
         start={settings.start}
         fix={fix}
         ghosts={state === 'running' ? ghostState?.ghosts : []}
@@ -143,7 +166,11 @@ export default function SpectatorGame({ team: initialTeam, settings, pellets, ca
             <div className="font-arcade text-[10px] text-pellet">{team.name}</div>
           </div>
           <div className="font-arcade text-xs text-ghost-cyan">{t.spectator}</div>
-          <p className="text-gray-200 text-center">{t.waitingForStart}</p>
+          {groupMode && signalMs > 0 ? (
+            <p className="font-arcade text-pellet text-lg text-center">{t.signalIn(Math.ceil(signalMs / 1000))}</p>
+          ) : (
+            <p className="text-gray-200 text-center">{t.waitingForStart}</p>
+          )}
           <p className="text-gray-500 text-center text-sm">{t.spectatorHint}</p>
           <p className="text-gray-500 text-center text-sm">{t.tapForSound}</p>
           <LanguageSwitch />
@@ -172,6 +199,7 @@ export default function SpectatorGame({ team: initialTeam, settings, pellets, ca
             danger={state === 'late' || (!stale && nearest < GHOST_WARN_M)}
             power={frightened}
             ghostBanner={banner}
+            firstBanner={firstBanner}
             weakSignal={!!heartbeat && !stale && heartbeat.fix === null}
             staleForMs={heartbeat && stale ? staleForMs(heartbeat, now) : null}
           />
@@ -192,6 +220,7 @@ export default function SpectatorGame({ team: initialTeam, settings, pellets, ca
           late={score.late}
           homeInTime={rule.latePenaltyPerStep > 0 && !!team.returnedAt && score.late === 0}
           onLeave={onLeaveTeam}
+          sharedDots={shared}
         />
       )}
 
