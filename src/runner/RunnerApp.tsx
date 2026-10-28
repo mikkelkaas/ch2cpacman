@@ -9,7 +9,7 @@ import { useWakeLock } from '../hooks/useWakeLock';
 import { useT } from '../i18n/LangProvider';
 import { api } from '../lib/api';
 import { haversineM } from '../lib/geo';
-import { isGroupMode, signalPendingMs, withGroupStart } from '../lib/group';
+import { groupEndMs, isGroupMode, isSharedDots, signalPendingMs, withGroupStart } from '../lib/group';
 import { isHome, latePenalty } from '../lib/late';
 import { lateMs, phaseState, remainingMs } from '../lib/phase';
 import { eventQueue, pending } from '../lib/queue';
@@ -33,11 +33,12 @@ import PhotoScreen from './PhotoScreen';
 import RunnerMap from './RunnerMap';
 import SpectatorGame from './SpectatorGame';
 import SpectatorQr from './SpectatorQr';
-import { useCaptureEngine } from './useCaptureEngine';
+import { initialCaptureTimes, useCaptureEngine } from './useCaptureEngine';
 import { useGhosts } from './useGhosts';
 import { useGroupSignal } from './useGroupSignal';
 import { useHeartbeat } from './useHeartbeat';
 import { useReturnHome } from './useReturnHome';
+import { useLostDotBanner, useSharedDots } from './useSharedDots';
 
 interface GameData {
   settings: Settings;
@@ -298,6 +299,19 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
   // Continue the chase from this run's last beat: same positions, same speed
   // ramp, same power and immunity timers, instead of fresh ghosts on reload.
   const restored = useMemo(() => restoredGhosts(heartbeat, team), [heartbeat, team]);
+  // Fælles prikker: a dot belongs to the team that ate it first. Polled until
+  // no score in the game can change any more.
+  const shared = isSharedDots(settings);
+  const endMs = groupEndMs(settings);
+  // The engine's capture times, a render behind: the engine itself needs the owners.
+  const [ownCaptures, setOwnCaptures] = useState<ReadonlyMap<string, string>>(() => initialCaptureTimes(captures, team));
+  const sharedDots = useSharedDots({
+    enabled: shared && (state === 'running' || state === 'late' || (state === 'over' && endMs !== null && now < endMs)),
+    settings,
+    pellets,
+    ownTeamId: team._id,
+    ownCaptures,
+  });
   const ghosts = useGhosts({ active: state === 'running', fix, pellets, team, settings, initialEvents: events, restored });
   const engine = useCaptureEngine({
     active: state === 'running',
@@ -310,7 +324,13 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
     onEaten: pellet => {
       if (pellet.kind === 'power') ghosts.powerEaten();
     },
+    blockedIds: shared ? sharedDots.blockedIds : undefined,
+    owners: shared ? sharedDots.owners : undefined,
   });
+  useEffect(() => setOwnCaptures(engine.captureTimes), [engine.captureTimes]);
+  // Another team's dots are drawn as gone.
+  const mapEatenIds = useMemo(() => (shared ? new Set([...engine.eatenIds, ...sharedDots.blockedIds]) : engine.eatenIds), [shared, engine.eatenIds, sharedDots.blockedIds]);
+  const firstBanner = useLostDotBanner(sharedDots.lost, shared && (state === 'running' || state === 'late'));
   // Publish this phone's fix and ghosts for spectators while the team is out.
   useHeartbeat({ active: state === 'running' || state === 'late', team, fix, ghosts: ghosts.ghosts });
   const late = team.startedAt ? latePenalty(team.startedAt, { ...rule, phaseMinutes: settings.phaseMinutes }, returnedAt, now) : 0;
@@ -330,7 +350,9 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
   const frightened = ghosts.ghosts ? isFrightened(ghosts.ghosts, now) : false;
   const ghostMode = !frightened ? 'normal' : ghosts.ghosts!.frightenedUntilMs - now < 5000 ? 'flashing' : 'frightened';
   const shielded = (ghosts.ghosts?.immuneUntilMs ?? 0) > now;
-  const doubleMs = doubleRemainingMs(engine.captureTimes, pellets, settings.doubleSeconds, now);
+  // A Dobbelt another team was first to stops doubling.
+  const ownedTimes = shared ? new Map([...engine.captureTimes].filter(([id]) => !sharedDots.blockedIds.has(id))) : engine.captureTimes;
+  const doubleMs = doubleRemainingMs(ownedTimes, pellets, settings.doubleSeconds, now);
 
   const flashReady = () => {
     sound.unlock();
@@ -389,14 +411,15 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
     return <PhotoScreen team={team} onDone={onTeamChange} onSkip={() => setPhotoSkipped(true)} />;
   }
 
-  const eatenCount = pellets.filter(p => engine.eatenIds.has(p._id)).length;
+  const eatenCount = pellets.filter(p => (shared ? ownedTimes : engine.eatenIds).has(p._id)).length;
 
   return (
     <div className="relative h-full w-full overflow-hidden">
       <RunnerMap
         theme={settings.mapTheme}
         pellets={pellets}
-        eatenIds={engine.eatenIds}
+        eatenIds={mapEatenIds}
+        takenColors={shared ? sharedDots.takenColors : undefined}
         start={settings.start}
         fix={fix}
         ghosts={state === 'running' ? ghosts.ghosts?.ghosts : []}
@@ -454,6 +477,7 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
           danger={state === 'late' || ghosts.nearest < GHOST_WARN_M}
           power={frightened}
           ghostBanner={ghosts.banner}
+          firstBanner={firstBanner}
           weakSignal={!!fix && !isUsableFix(fix)}
           onMarkHome={canMarkHome ? () => window.confirm(t.markHomeConfirm) && markHome() : undefined}
         />
@@ -477,6 +501,7 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
           homeInTime={rule.latePenaltyPerStep > 0 && !!returnedAt && late === 0}
           onLeave={onLeaveTeam}
           uploading={engine.pendingCount > 0 || eventQueue.pending().length > 0}
+          sharedDots={shared}
         />
       )}
 

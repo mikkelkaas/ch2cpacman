@@ -16,9 +16,11 @@ interface Props {
   onLeave?: () => void;
   /** Captures or events are still waiting to upload: leaving now is held back. */
   uploading?: boolean;
+  /** Fælles prikker: the score can still change as other phones upload. */
+  sharedDots?: boolean;
 }
 
-export default function GameOver({ points, pelletCount, teamName, photoUrl = null, late = 0, homeInTime = false, onLeave, uploading = false }: Props) {
+export default function GameOver({ points, pelletCount, teamName, photoUrl = null, late = 0, homeInTime = false, onLeave, uploading = false, sharedDots = false }: Props) {
   const t = useT();
   useEffect(() => {
     sound.gameOver();
@@ -35,6 +37,7 @@ export default function GameOver({ points, pelletCount, teamName, photoUrl = nul
         <div className="font-arcade text-[10px] text-pellet">{teamName}</div>
         <div className="font-arcade text-[10px] text-pellet">{t.finalScore}</div>
         <div className="font-arcade text-5xl text-pac glow-pac tabular-nums">{String(points).padStart(4, '0')}</div>
+        {sharedDots && <div className="text-gray-400 text-sm">{t.finalOnScoreboard}</div>}
         <div className="text-gray-300">{t.pelletsEaten(pelletCount)}</div>
         {late > 0 && <div className="text-ghost-red">{t.lateLine(late)}</div>}
         {homeInTime && <div className="text-ghost-cyan">{t.homeInTime}</div>}
