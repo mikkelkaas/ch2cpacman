@@ -19,9 +19,12 @@ export const playerNb: PlayerStrings = {
   rules: (s: RulesInput) => [
     { icon: '⏱', text: `Dere har ${s.minutes} minutter.` },
     { icon: '•', text: 'Kartet viser prikker. Løp bort til dem.' },
-    { icon: '🗺', text: 'Før dere starter, kan dere se kartet og prikkene. Legg en plan, tiden starter først når dere trykker START.' },
+    s.groupStart
+      ? { icon: '🗺', text: 'Før start kan dere se kartet og prikkene. Legg en plan, tiden starter på lederens signal, for alle lag på én gang.' }
+      : { icon: '🗺', text: 'Før dere starter, kan dere se kartet og prikkene. Legg en plan, tiden starter først når dere trykker START.' },
     { icon: 'ᗧ', text: 'Telefonen spiser prikken når dere er nær nok. Dere trenger ikke trykke.' },
     { icon: '★', text: 'Jo lenger unna, jo flere poeng.' },
+    ...(s.sharedDots ? [{ icon: '👥', text: 'Prikkene deles med de andre lagene. Laget som først når en prikk, får den, og da er den borte for alle andre.' }] : []),
     ...(s.ghosts ? [{ icon: '👻', text: `Spøkelser jakter på dere. Blir dere tatt, mister dere ${s.penalty} poeng. Løp!` }] : []),
     ...(s.ghosts ? [{ icon: '🧱', text: 'Spøkelser går rett gjennom hus, gjerder og kratt. Dere kan ikke gjemme dere bak noe.' }] : []),
     ...(s.ghosts && s.hungry ? [{ icon: '🔥', text: 'Jo lenger et spøkelse jakter uten å ta dere, jo raskere blir det.' }] : []),
@@ -57,6 +60,8 @@ export const playerNb: PlayerStrings = {
   uploadingPhoto: 'SENDER…',
   photoFailed: 'Kunne ikke sende bildet. Prøv igjen, eller hopp over.',
   readyQuestion: 'Se på kartet og legg en plan. Tiden starter først når dere trykker.',
+  waitingForSignal: 'Se på kartet og legg en plan. Tiden starter når lederen gir signal.',
+  signalIn: (s: number) => `START OM ${s}`,
   pressStart: 'TRYKK START',
   starting: 'STARTER…',
   startFailed: 'Kunne ikke starte, prøv igjen',

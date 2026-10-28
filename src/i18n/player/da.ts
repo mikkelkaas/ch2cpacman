@@ -10,6 +10,10 @@ export interface RulesInput {
   lateStep: number;
   latePenalty: number;
   latePenaltyMax: number;
+  /** The leader starts every team at once (Samlet start). */
+  groupStart: boolean;
+  /** A dot is eaten once for the whole game (Fælles prikker). */
+  sharedDots: boolean;
 }
 
 /** Everything a runner or spectator reads. English and Norwegian follow this shape. */
@@ -31,9 +35,12 @@ export const playerDa = {
   rules: (s: RulesInput) => [
     { icon: '⏱', text: `I har ${s.minutes} minutter.` },
     { icon: '•', text: 'Kortet viser prikker. Løb hen til dem.' },
-    { icon: '🗺', text: 'Før I starter, kan I se kortet og prikkerne. Læg en plan, tiden starter først, når I trykker START.' },
+    s.groupStart
+      ? { icon: '🗺', text: 'Før start kan I se kortet og prikkerne. Læg en plan, tiden starter på lederens signal, for alle hold på én gang.' }
+      : { icon: '🗺', text: 'Før I starter, kan I se kortet og prikkerne. Læg en plan, tiden starter først, når I trykker START.' },
     { icon: 'ᗧ', text: 'Telefonen spiser prikken, når I er tæt nok på. I skal ikke trykke.' },
     { icon: '★', text: 'Jo længere væk, jo flere point.' },
+    ...(s.sharedDots ? [{ icon: '👥', text: 'Prikkerne deles med de andre hold. Det hold, der først når en prik, får den, og så er den væk for alle andre.' }] : []),
     ...(s.ghosts ? [{ icon: '👻', text: `Spøgelser jager jer. Fanger de jer, mister I ${s.penalty} point. Løb!` }] : []),
     ...(s.ghosts ? [{ icon: '🧱', text: 'Spøgelser går lige igennem huse, hegn og krat. I kan ikke gemme jer bag noget.' }] : []),
     ...(s.ghosts && s.hungry ? [{ icon: '🔥', text: 'Jo længere et spøgelse jager uden at fange jer, jo hurtigere bliver det.' }] : []),
@@ -69,6 +76,8 @@ export const playerDa = {
   uploadingPhoto: 'SENDER…',
   photoFailed: 'Kunne ikke sende fotoet. Prøv igen, eller spring over.',
   readyQuestion: 'Kig på kortet og læg en plan. Tiden starter først, når I trykker.',
+  waitingForSignal: 'Kig på kortet og læg en plan. Tiden starter, når lederen giver signal.',
+  signalIn: (s: number) => `START OM ${s}`,
   pressStart: 'TRYK START',
   starting: 'STARTER…',
   startFailed: 'Kunne ikke starte, prøv igen',

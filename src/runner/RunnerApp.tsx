@@ -9,6 +9,7 @@ import { useWakeLock } from '../hooks/useWakeLock';
 import { useT } from '../i18n/LangProvider';
 import { api } from '../lib/api';
 import { haversineM } from '../lib/geo';
+import { isGroupMode, signalPendingMs, withGroupStart } from '../lib/group';
 import { isHome, latePenalty } from '../lib/late';
 import { lateMs, phaseState, remainingMs } from '../lib/phase';
 import { eventQueue, pending } from '../lib/queue';
@@ -34,6 +35,7 @@ import SpectatorGame from './SpectatorGame';
 import SpectatorQr from './SpectatorQr';
 import { useCaptureEngine } from './useCaptureEngine';
 import { useGhosts } from './useGhosts';
+import { useGroupSignal } from './useGroupSignal';
 import { useHeartbeat } from './useHeartbeat';
 import { useReturnHome } from './useReturnHome';
 
@@ -93,6 +95,7 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
     if (match) chooseTeam(match, joinRole);
   }, [joinCode, joinRole, teams, chooseTeam]);
 
+  // The raw record, as the store has it. Every team write is built on this.
   const team = teams?.find(t => t._id === teamId) ?? null;
 
   // The address follows the joined team and role, whether they came from the
@@ -158,6 +161,14 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
     };
   }, [loadGame]);
 
+  // The leader's signal lands on the settings record while the game is open.
+  const onSettingsChange = useCallback((settings: Settings) => setData(d => (d ? { ...d, settings } : d)), []);
+
+  // The team as the game sees it: in a group game it starts on the signal.
+  // Only for display and play, never written back.
+  const loadedSettings = data?.settings ?? null;
+  const effectiveTeam = useMemo(() => (team && loadedSettings ? withGroupStart(team, loadedSettings) : team), [team, loadedSettings]);
+
   if (loadError && !teams) {
     return (
       <div className="min-h-full flex flex-col">
@@ -203,7 +214,7 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
     return (
       <SpectatorGame
         key={`watch-${team._id}`}
-        team={team}
+        team={effectiveTeam ?? team}
         settings={withDefaults(settings)}
         pellets={pellets}
         captures={captures}
@@ -216,13 +227,14 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
   return (
     <Game
       key={team._id}
-      team={team}
+      team={effectiveTeam ?? team}
       settings={withDefaults(settings)}
       pellets={pellets}
       captures={captures}
       events={events}
       heartbeat={heartbeat}
       onTeamChange={updated => setTeams(list => (list ? list.map(t => (t._id === updated._id ? updated : t)) : list))}
+      onSettingsChange={onSettingsChange}
       onLeaveTeam={() => chooseTeam(null)}
     />
   );
@@ -236,13 +248,20 @@ interface GameProps {
   events: GameEvent[];
   /** The last heartbeat of this run, if any, so the ghosts continue after a reload. */
   heartbeat: Heartbeat | null;
+  /** Takes a raw team record, as the store has it. */
   onTeamChange: (team: Team) => void;
+  onSettingsChange: (settings: Settings) => void;
   onLeaveTeam: () => void;
 }
 
-function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChange, onLeaveTeam }: GameProps) {
+/** `team` is the effective team (`withGroupStart`): never write it back. */
+function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChange, onSettingsChange, onLeaveTeam }: GameProps) {
   const t = useT();
   const now = useNow(250);
+  const groupMode = isGroupMode(settings);
+  // A phone clock behind the leader's sees the signal in the future: count down to it.
+  const signalMs = signalPendingMs(settings, now);
+  useGroupSignal({ enabled: groupMode && (!settings.groupStartedAt || signalMs > 0), gameId: team.gameId, onSettings: onSettingsChange });
   const { fix, error: geoError } = useGeolocation();
   const rule = { lateStepS: settings.lateStepS, latePenaltyPerStep: settings.latePenaltyPerStep, latePenaltyMax: settings.latePenaltyMax };
   // The countdown has ended and the team is not home: keep looking for home.
@@ -259,7 +278,9 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
   const returnedAt = team.returnedAt ?? homeAt;
   const state = phaseState({ startedAt: team.startedAt, returnedAt }, settings.phaseMinutes, now, rule);
   const [briefed, setBriefed] = useState(state !== 'idle');
-  const [photoSkipped, setPhotoSkipped] = useState(false);
+  // A phone that mounts mid-run skips the rules and the photo. One that is
+  // still on them when the signal comes stays there until the team moves on.
+  const [photoSkipped, setPhotoSkipped] = useState(state !== 'idle');
   const [rulesOpen, setRulesOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -311,15 +332,31 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
   const shielded = (ghosts.ghosts?.immuneUntilMs ?? 0) > now;
   const doubleMs = doubleRemainingMs(engine.captureTimes, pellets, settings.doubleSeconds, now);
 
+  const flashReady = () => {
+    sound.unlock();
+    sound.startJingle();
+    setReadyFlash(true);
+    window.setTimeout(() => setReadyFlash(false), 1500);
+  };
+
+  const showRules = !briefed;
+  const showPhoto = settings.teamPhoto && !team.photoKey && !photoSkipped;
+  // The team waits on the map, and the leader's signal starts it there.
+  const waitingOnMap = state === 'idle' && !showRules && !showPhoto;
+  const wasWaitingOnMap = useRef(waitingOnMap);
+  useEffect(() => {
+    if (groupMode && wasWaitingOnMap.current && state === 'running') flashReady();
+    wasWaitingOnMap.current = waitingOnMap;
+  }, [groupMode, state, waitingOnMap]);
+
+  // Solo only: in a group game the leader's signal starts every team.
   const start = async () => {
+    if (groupMode) return;
     setStarting(true);
     setStartError(null);
     try {
       const updated = await api.teams.update({ ...team, startedAt: new Date().toISOString() });
-      sound.unlock();
-      sound.startJingle();
-      setReadyFlash(true);
-      window.setTimeout(() => setReadyFlash(false), 1500);
+      flashReady();
       onTeamChange(updated);
     } catch {
       setStartError(t.startFailed);
@@ -332,7 +369,7 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
     return <FullScreenMessage title={t.locationDenied}>{t.locationDeniedHint}</FullScreenMessage>;
   }
 
-  if (state === 'idle' && !briefed) {
+  if (showRules) {
     return (
       <Briefing
         teamName={team.name}
@@ -348,7 +385,7 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
       />
     );
   }
-  if (state === 'idle' && settings.teamPhoto && !team.photoKey && !photoSkipped) {
+  if (showPhoto) {
     return <PhotoScreen team={team} onDone={onTeamChange} onSkip={() => setPhotoSkipped(true)} />;
   }
 
@@ -375,11 +412,21 @@ function Game({ team, settings, pellets, captures, events, heartbeat, onTeamChan
             {team.photoKey && <img src={photoUrl(team.photoKey)} alt="" className="w-12 h-12 object-cover border-2 border-maze" />}
             <div className="font-arcade text-[10px] text-pellet">{team.name}</div>
           </div>
-          <p className="text-gray-200 text-center">{fix ? t.readyQuestion : t.locationWaiting}</p>
-          {startError && <p className="font-arcade text-ghost-red text-xs">{startError}</p>}
-          <ArcadeButton onClick={start} disabled={starting || !fix} className="w-full max-w-sm text-lg py-5 glow-maze">
-            {starting ? t.starting : t.pressStart}
-          </ArcadeButton>
+          {groupMode ? (
+            signalMs > 0 ? (
+              <p className="font-arcade text-pellet text-lg text-center">{t.signalIn(Math.ceil(signalMs / 1000))}</p>
+            ) : (
+              <p className="text-gray-200 text-center">{fix ? t.waitingForSignal : t.locationWaiting}</p>
+            )
+          ) : (
+            <>
+              <p className="text-gray-200 text-center">{fix ? t.readyQuestion : t.locationWaiting}</p>
+              {startError && <p className="font-arcade text-ghost-red text-xs">{startError}</p>}
+              <ArcadeButton onClick={start} disabled={starting || !fix} className="w-full max-w-sm text-lg py-5 glow-maze">
+                {starting ? t.starting : t.pressStart}
+              </ArcadeButton>
+            </>
+          )}
           <div className="flex gap-4 text-xs text-gray-500">
             <button onClick={() => setQrOpen(true)} className="underline">
               {t.addSpectator}
