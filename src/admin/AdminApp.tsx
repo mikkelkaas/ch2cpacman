@@ -53,7 +53,9 @@ export default function AdminApp({ gameId }: { gameId: string }) {
   }, [gameId]);
 
   const loadLive = useCallback(async () => {
-    const [teamList, captureList, eventList] = await Promise.all([api.teams.list({ gameId }), api.captures.list({ gameId }), api.events.list({ gameId })]);
+    const [teamList, captureList, eventList, settingsList] = await Promise.all([api.teams.list({ gameId }), api.captures.list({ gameId }), api.events.list({ gameId }), api.settings.list({ gameId })]);
+    // The group signal can come from Postmandskab: the admin must see it within a poll.
+    if (settingsList[0]) setSettings(settingsList[0]);
     setTeams(teamList);
     setCaptures(captureList);
     setEvents(eventList);
@@ -71,16 +73,22 @@ export default function AdminApp({ gameId }: { gameId: string }) {
     }
   }, []);
 
-  const saveSettings = (next: Settings) =>
+  // Built on the record as the store has it now, never on local state: a leader may
+  // have started the group elsewhere, and a stale copy would write that away.
+  const saveSettings = (patch: Partial<Settings>) =>
     write(async () => {
-      setSettings(await api.settings.update(next));
+      const current = (await api.settings.list({ gameId }))[0] ?? settings;
+      if (!current) return;
+      const changed = (Object.keys(patch) as (keyof Settings)[]).some(k => JSON.stringify(patch[k]) !== JSON.stringify(current[k]));
+      // cruttelut answers 404 to a PUT that changes nothing.
+      setSettings(changed ? await api.settings.update({ ...current, ...patch }) : current);
     });
 
   const onMapClick = (latlng: LatLng) => {
     if (!settings || !pellets) return;
     if (mode === 'setStart') {
       setMode('idle');
-      void saveSettings({ ...settings, start: latlng });
+      void saveSettings({ start: latlng });
       return;
     }
     void write(async () => {
