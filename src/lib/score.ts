@@ -76,7 +76,34 @@ export interface TeamScore {
   lastCaptureAt: string | null;
 }
 
-type ScoringSettings = Pick<Settings, 'phaseMinutes' | 'doubleSeconds' | 'lateStepS' | 'latePenaltyPerStep' | 'latePenaltyMax'>;
+type ScoringSettings = Pick<Settings, 'phaseMinutes' | 'playMode' | 'doubleSeconds' | 'lateStepS' | 'latePenaltyPerStep' | 'latePenaltyMax'>;
+
+/** When this team's captures and events count: its start to its end (or home stamp) plus the grace. Null before Start. */
+function windowOf(team: Team, settings: Pick<Settings, 'phaseMinutes'>): { startMs: number; endMs: number } | null {
+  if (!team.startedAt) return null;
+  return { startMs: Date.parse(team.startedAt), endMs: runEndMs(team, settings.phaseMinutes) + GRACE_MS };
+}
+
+/**
+ * Shared dots: pellet id to the team that owns it. The earliest capture that
+ * counts for its own team wins, a tie going to the lower `clientId`. A capture
+ * outside its team's window blocks nobody. Teams must be the effective ones
+ * (already through `withGroupStart`).
+ */
+export function dotOwners(teams: readonly Team[], captures: readonly Capture[], pellets: readonly Pellet[], settings: ScoringSettings): Map<string, string> {
+  const windows = new Map(teams.map(t => [t._id, windowOf(t, settings)]));
+  const listed = new Set(pellets.map(p => p._id));
+  const best = new Map<string, Capture>();
+  for (const c of captures) {
+    const w = windows.get(c.teamId);
+    if (!w || !listed.has(c.pelletId)) continue;
+    const t = Date.parse(c.capturedAt);
+    if (t < w.startMs || t > w.endMs) continue;
+    const seen = best.get(c.pelletId);
+    if (!seen || c.capturedAt < seen.capturedAt || (c.capturedAt === seen.capturedAt && c.clientId < seen.clientId)) best.set(c.pelletId, c);
+  }
+  return new Map([...best].map(([pelletId, c]) => [pelletId, c.teamId]));
+}
 
 const EMPTY = (team: Team): TeamScore => ({ team, points: 0, pellets: [], scored: [], caught: 0, ghostsEaten: 0, pelletPoints: 0, late: 0, lastCaptureAt: null });
 
@@ -96,10 +123,11 @@ export function scoreTeam(
   settings: ScoringSettings,
   events: readonly GameEvent[] = [],
   nowMs: number = Date.now(),
+  owners?: ReadonlyMap<string, string>,
 ): TeamScore {
-  if (!team.startedAt) return EMPTY(team);
-  const startMs = Date.parse(team.startedAt);
-  const endMs = runEndMs(team, settings.phaseMinutes) + GRACE_MS;
+  const window = windowOf(team, settings);
+  if (!window || !team.startedAt) return EMPTY(team);
+  const { startMs, endMs } = window;
   const inWindow = (iso: string) => {
     const t = Date.parse(iso);
     return t >= startMs && t <= endMs;
@@ -108,7 +136,7 @@ export function scoreTeam(
   const doubleMs = (settings.doubleSeconds ?? SETTINGS_DEFAULTS.doubleSeconds) * 1000;
 
   const counted = dedupeCaptures(captures.filter(c => c.teamId === team._id))
-    .filter(c => inWindow(c.capturedAt) && byId.has(c.pelletId))
+    .filter(c => inWindow(c.capturedAt) && byId.has(c.pelletId) && (!owners || owners.get(c.pelletId) === team._id))
     .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt));
 
   const doubleStarts = counted.filter(c => byId.get(c.pelletId)!.kind === 'double').map(c => Date.parse(c.capturedAt));
@@ -158,8 +186,9 @@ export function rankTeams(
   events: readonly GameEvent[] = [],
   nowMs: number = Date.now(),
 ): TeamScore[] {
+  const owners = settings.playMode === 'shared' ? dotOwners(teams, captures, pellets, settings) : undefined;
   return teams
-    .map(team => scoreTeam(team, captures, pellets, settings, events, nowMs))
+    .map(team => scoreTeam(team, captures, pellets, settings, events, nowMs, owners))
     .sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
       const la = a.lastCaptureAt ?? '~';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { captureTimesOf, dedupeCaptures, dedupeEvents, doubleRemainingMs, ofCurrentRun, rankTeams, scoreTeam } from './score';
+import { captureTimesOf, dedupeCaptures, dedupeEvents, dotOwners, doubleRemainingMs, ofCurrentRun, rankTeams, scoreTeam } from './score';
 import type { Capture, Pellet, Team } from './types';
 // Dobbelt and ghost event tests below reuse these fixtures.
 
@@ -178,5 +178,60 @@ describe('ofCurrentRun', () => {
   });
   it('is empty before Start', () => {
     expect(ofCurrentRun([cap('t1', 'p1', 0)], { ...team, startedAt: null }, c => c.capturedAt)).toEqual([]);
+  });
+});
+
+describe('shared dots', () => {
+  const dbl: Pellet = { _id: 'd', name: 'Dobbelt', lat: 0, lng: 0, radiusM: 5, points: 1, kind: 'double' };
+  const all = [...pellets, dbl];
+  const teams = [team, other];
+
+  it('gives the dot to the earliest capture, and only that team scores it', () => {
+    const captures = [cap('t1', 'p2', 60_000), cap('t2', 'p2', 30_000)];
+    const owners = dotOwners(teams, captures, pellets, settings);
+    expect(owners.get('p2')).toBe('t2');
+    expect(scoreTeam(team, captures, pellets, settings, [], Date.now(), owners).points).toBe(0);
+    expect(scoreTeam(other, captures, pellets, settings, [], Date.now(), owners).points).toBe(5);
+  });
+  it('breaks a tie on capturedAt with the lower clientId', () => {
+    const a = { ...cap('t1', 'p1', 10_000), clientId: 'b' };
+    const b = { ...cap('t2', 'p1', 10_000), clientId: 'a' };
+    expect(dotOwners(teams, [a, b], pellets, settings).get('p1')).toBe('t2');
+    expect(dotOwners(teams, [b, a], pellets, settings).get('p1')).toBe('t2');
+  });
+  it('ignores a capture outside its own window, e.g. after the home stamp plus grace', () => {
+    // t2 is home at +20 s, so its window ends at +50 s; +51 s no longer counts for it.
+    const home = { ...other, returnedAt: iso(20_000) };
+    const owners = dotOwners([team, home], [cap('t2', 'p1', 51_000), cap('t1', 'p1', 60_000)], pellets, settings);
+    expect(owners.get('p1')).toBe('t1');
+  });
+  it('lets a capture before the start block nobody', () => {
+    const owners = dotOwners(teams, [cap('t2', 'p1', -1000), cap('t1', 'p1', 5000)], pellets, settings);
+    expect(owners.get('p1')).toBe('t1');
+  });
+  it('ignores captures by teams not in the list and of unlisted pellets', () => {
+    const owners = dotOwners([team], [cap('t2', 'p1', 1000), cap('t1', 'p1', 5000), cap('t1', 'gone', 1000)], pellets, settings);
+    expect(owners.get('p1')).toBe('t1');
+    expect(owners.has('gone')).toBe(false);
+  });
+  it('gives a team that never started nothing, and an empty list an empty map', () => {
+    const idle = { ...team, startedAt: null };
+    expect(dotOwners([idle], [cap('t1', 'p1', 1000)], pellets, settings).size).toBe(0);
+    expect(dotOwners(teams, [], pellets, settings).size).toBe(0);
+  });
+  it('computes Dobbelt from owned captures only', () => {
+    const captures = [cap('t2', 'd', 10_000), cap('t1', 'd', 20_000), cap('t1', 'p1', 30_000)];
+    const owners = dotOwners(teams, captures, all, { ...settings, doubleSeconds: 60 });
+    expect(owners.get('d')).toBe('t2');
+    const s = scoreTeam(team, captures, all, { ...settings, doubleSeconds: 60 }, [], Date.now(), owners);
+    expect(s.points).toBe(1);
+    expect(s.scored.map(x => x.multiplier)).toEqual([1]);
+  });
+  it('ranks by owned points when playMode is shared, and unchanged otherwise', () => {
+    const captures = [cap('t1', 'p2', 60_000), cap('t2', 'p2', 30_000), cap('t1', 'p1', 70_000)];
+    const shared = rankTeams(teams, captures, pellets, { ...settings, playMode: 'shared' });
+    expect(shared.map(r => [r.team._id, r.points])).toEqual([['t2', 5], ['t1', 1]]);
+    const solo = rankTeams(teams, captures, pellets, settings);
+    expect(solo.map(r => [r.team._id, r.points])).toEqual([['t1', 6], ['t2', 5]]);
   });
 });
