@@ -215,7 +215,7 @@ export default function RunnerApp({ joinCode = null, joinRole = 'runner' }: { jo
     return (
       <SpectatorGame
         key={`watch-${team._id}`}
-        team={effectiveTeam ?? team}
+        team={team}
         settings={withDefaults(settings)}
         pellets={pellets}
         captures={captures}
