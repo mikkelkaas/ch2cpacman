@@ -16,6 +16,11 @@ interface Props {
   /** The leader saw the team back at the start: stamp it home now. */
   onMarkHome: (team: Team) => Promise<void>;
   onDelete: (team: Team) => Promise<void>;
+  /** Per-team Nulstil is for solo games; in a group mode the whole game is reset at once. */
+  perTeamReset: boolean;
+  /** Offer Nulstil alle (something has started or been captured). */
+  canResetAll: boolean;
+  onResetAll: () => Promise<void>;
 }
 
 /** One team per line; blank lines and duplicates within the paste are dropped. */
@@ -32,7 +37,7 @@ export function parseTeamNames(text: string): string[] {
   return names;
 }
 
-export default function TeamsPanel({ teams, settings, now, onAdd, onReset, onMarkHome, onDelete }: Props) {
+export default function TeamsPanel({ teams, settings, now, onAdd, onReset, onMarkHome, onDelete, perTeamReset, canResetAll, onResetAll }: Props) {
   const { phaseMinutes } = settings;
   const rule = { lateStepS: settings.lateStepS, latePenaltyPerStep: settings.latePenaltyPerStep, latePenaltyMax: settings.latePenaltyMax };
   const [text, setText] = useState('');
@@ -64,7 +69,16 @@ export default function TeamsPanel({ teams, settings, now, onAdd, onReset, onMar
   };
 
   return (
-    <Panel title={<>{da.teams} <span className="text-gray-400 font-normal">({teams.length})</span></>}>
+    <Panel
+      title={<>{da.teams} <span className="text-gray-400 font-normal">({teams.length})</span></>}
+      action={
+        canResetAll && (
+          <Button variant="danger" onClick={() => confirm(da.confirmResetAll) && void onResetAll()}>
+            {da.resetAll}
+          </Button>
+        )
+      }
+    >
       <form onSubmit={submit} className="flex flex-col gap-2">
         <label className="text-sm text-gray-700" htmlFor="team-names">
           {da.teamNames}
@@ -126,9 +140,11 @@ export default function TeamsPanel({ teams, settings, now, onAdd, onReset, onMar
                     >
                       {da.markHome}
                     </button>
-                    <button onClick={() => confirm(da.confirmReset(team.name)) && void onReset(team)} className="text-amber-700 hover:underline text-xs disabled:text-gray-300 disabled:no-underline mr-3" disabled={!team.startedAt}>
-                      {da.reset}
-                    </button>
+                    {perTeamReset && (
+                      <button onClick={() => confirm(da.confirmReset(team.name)) && void onReset(team)} className="text-amber-700 hover:underline text-xs disabled:text-gray-300 disabled:no-underline mr-3" disabled={!team.startedAt}>
+                        {da.reset}
+                      </button>
+                    )}
                     <button onClick={() => confirm(da.confirmDeleteTeam(team.name)) && void onDelete(team)} className="text-red-600 hover:underline text-xs">
                       {da.delete}
                     </button>

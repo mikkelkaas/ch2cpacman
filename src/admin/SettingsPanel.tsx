@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react';
 import { da } from '../i18n/da';
 import { withDefaults } from '../lib/settings';
-import { MAP_THEMES } from '../lib/types';
-import type { GameSettings, MapTheme, Settings } from '../lib/types';
+import { MAP_THEMES, PLAY_MODES } from '../lib/types';
+import type { GameSettings, MapTheme, PlayMode, Settings } from '../lib/types';
 import type { MapMode } from './AdminMap';
 import { Button, inputClass, Panel } from './ui';
 
 interface Props {
   settings: Settings;
+  /** Teams have started or captured: the play mode can't change until Nulstil alle. */
+  playModeLocked: boolean;
   mode: MapMode;
   onSave: (settings: Settings) => Promise<void>;
   onSetMode: (mode: MapMode) => void;
 }
 
-export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Props) {
+export default function SettingsPanel({ settings, playModeLocked, mode, onSave, onSetMode }: Props) {
   const [minutes, setMinutes] = useState(String(settings.phaseMinutes));
   useEffect(() => setMinutes(String(settings.phaseMinutes)), [settings.phaseMinutes]);
 
@@ -59,6 +61,17 @@ export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Pro
         </Button>
       </div>
       {arming && <p className="text-amber-700 text-sm">{da.setStartHint}</p>}
+      <label className="flex items-center justify-between gap-3 text-sm text-gray-700">
+        {da.playMode}
+        <select value={full.playMode} disabled={playModeLocked} onChange={e => void onSave({ ...settings, playMode: e.target.value as PlayMode })} className={`${inputClass} disabled:bg-gray-100 disabled:text-gray-500`}>
+          {PLAY_MODES.map(m => (
+            <option key={m} value={m}>
+              {da.playModes[m]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {playModeLocked && <p className="text-gray-500 text-xs">{da.playModeLocked}</p>}
       <label className="flex items-center justify-between gap-3 text-sm text-gray-700">
         {da.mapTheme}
         <select value={full.mapTheme} onChange={e => void onSave({ ...settings, mapTheme: e.target.value as MapTheme })} className={inputClass}>
