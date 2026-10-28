@@ -12,6 +12,9 @@ describe('phase', () => {
   it('is idle without a start', () => {
     expect(phaseState({ startedAt: null }, 10, start)).toBe('idle');
   });
+  it('is idle before the start time, as with a group signal still to come', () => {
+    expect(phaseState({ startedAt }, 10, start - 1000)).toBe('idle');
+  });
   it('is running inside the window and over after it', () => {
     expect(phaseState({ startedAt }, 10, start + 5 * min)).toBe('running');
     expect(phaseState({ startedAt }, 10, start + 10 * min)).toBe('over');

@@ -30,7 +30,7 @@ export default function SettingsPanel({ settings, mode, onSave, onSetMode }: Pro
   const speedField = (key: 'ghostSpeedMps' | 'ghostMaxSpeedMps', label: string) => (
     <NumberField key={key} label={label} value={Math.round(full[key] * KMH * 10) / 10} min={0.1} step={0.5} onCommit={value => void onSave({ ...settings, [key]: value / KMH })} />
   );
-  const numberField = (key: keyof Omit<GameSettings, '_id' | 'gameId' | 'start' | 'phaseMinutes' | 'mapTheme' | 'teamPhoto'>, label: string, min: number, step = 1) => (
+  const numberField = (key: keyof Omit<GameSettings, '_id' | 'gameId' | 'start' | 'phaseMinutes' | 'mapTheme' | 'teamPhoto' | 'playMode' | 'groupStartedAt'>, label: string, min: number, step = 1) => (
     <NumberField key={key} label={label} value={full[key]} min={min} step={step} onCommit={value => void onSave({ ...settings, [key]: value })} />
   );
 

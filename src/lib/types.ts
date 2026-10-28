@@ -17,6 +17,10 @@ export interface GameScoped {
 export const MAP_THEMES = ['nat', 'neon', 'lys', 'amber', 'groen'] as const;
 export type MapTheme = (typeof MAP_THEMES)[number];
 
+export const PLAY_MODES = ['solo', 'together', 'shared'] as const;
+/** solo: each team starts itself. together: one signal starts everyone. shared: together, and a dot is eaten once for all. */
+export type PlayMode = (typeof PLAY_MODES)[number];
+
 export interface Settings extends GameScoped {
   _id: string;
   phaseMinutes: number;
@@ -45,6 +49,10 @@ export interface Settings extends GameScoped {
   latePenaltyPerStep?: number;
   /** The late penalty never exceeds this. */
   latePenaltyMax?: number;
+  /** Missing means 'solo'. */
+  playMode?: PlayMode;
+  /** ISO timestamp of the group signal in a group mode; null until the leader gives it. */
+  groupStartedAt?: string | null;
 }
 
 /** Filled-in settings, every optional field present. */

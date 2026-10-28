@@ -16,6 +16,8 @@ export const SETTINGS_DEFAULTS = {
   lateStepS: 10,
   latePenaltyPerStep: 1,
   latePenaltyMax: 10,
+  playMode: 'solo' as const,
+  groupStartedAt: null,
 } as const;
 
 /** Distance at which a ghost catches the team, or is eaten while blue. */
